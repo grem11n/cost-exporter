@@ -11,6 +11,7 @@ import (
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer"
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer/types"
+	"github.com/grem11n/aws-cost-meter/cache"
 	"github.com/grem11n/aws-cost-meter/config"
 	"github.com/grem11n/aws-cost-meter/logger"
 	"golang.org/x/sync/errgroup"
@@ -38,7 +39,8 @@ func New(config *config.Config) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) GetCostAndUsageMatrics() ([]*costexplorer.GetCostAndUsageOutput, error) {
+func (c *Client) GetCostAndUsageMatrics() (*cache.RawCache, error) {
+	var cache = cache.GetRawCache()
 	var results []*costexplorer.GetCostAndUsageOutput
 	var mu sync.Mutex
 	var grp errgroup.Group
@@ -63,7 +65,8 @@ func (c *Client) GetCostAndUsageMatrics() ([]*costexplorer.GetCostAndUsageOutput
 	if err := grp.Wait(); err != nil {
 		return nil, err
 	}
-	return results, nil
+	cache.CostAndUsageMetrics = results
+	return cache, nil
 }
 
 func (c *Client) getCostAndUsageMetric(metric config.MetricsConfig, pageToken *string) (*costexplorer.GetCostAndUsageOutput, error) {

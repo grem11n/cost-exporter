@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 
-	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
@@ -31,9 +30,8 @@ var (
 	}
 )
 
-func New(flags *flag.FlagSet) (*Config, error) {
-	configPath, err := flags.GetString("config")
-	if configPath == "" || err != nil {
+func New(configPath string) (*Config, error) {
+	if configPath == "" {
 		configPath = os.Getenv("CONFIG")
 		if configPath == "" {
 			configPath = defaultConfigPath

@@ -5,12 +5,12 @@ import (
 )
 
 type Config struct {
-	AWS        AWSConfig          `mapstructure:"aws"`
-	Metrics    []MetricsConfig    `mapstructure:"metrics"`
-	Converters []ConvertersConfig `mapstructure:"converters"`
-	Outputs    []OutputsConfig    `mapstructure:"outputs"`
+	AWS     AWSConfig       `mapstructure:"aws"`
+	Metrics []MetricsConfig `mapstructure:"metrics"`
+	Outputs []OutputsConfig `mapstructure:"outputs"`
 }
 
+// TODO: Calculate metrics names based on metrics themselves
 type MetricsConfig struct {
 	Name         string                  `mapstructure:"name"`
 	PollInterval string                  `mapstructure:"poll_interval"`
@@ -21,7 +21,14 @@ type MetricsConfig struct {
 }
 
 type AWSConfig struct{}
-type ConvertersConfig struct{}
-type OutputsConfig struct{
 
+// OutputsConfig holds configuration specific for each output implementation.
+type OutputsConfig struct {
+	Prometheus PrometheusConfig `mapstructure:"prometheus"`
+}
+
+// PrometheusConfig holds configuration for HTTP output in Prometheus format.
+type PrometheusConfig struct {
+	Host string
+	Port int64
 }
