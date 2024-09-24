@@ -1,0 +1,15 @@
+---
+# Metrics specifies which metrics to fetch
+metrics:
+  - name: daily_cost
+    poll_interval: 1d
+    granularity: hourly
+    metrics:
+      - "NetAmortizedCost"
+    group_by:
+      - type: DIMENSION
+        key: SERVICE
+    filter:
+      dimensions:
+        key: SERVICE
+        values: ["EC2 - Other"]
