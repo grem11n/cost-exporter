@@ -12,12 +12,11 @@ type Config struct {
 
 // TODO: Calculate metrics names based on metrics themselves
 type MetricsConfig struct {
-	Name         string                  `mapstructure:"name"`
-	PollInterval string                  `mapstructure:"poll_interval"`
-	Granularity  string                  `mapstructure:"granularity"`
-	Metrics      []string                `mapstructure:"metrics"`
-	GroupBy      []types.GroupDefinition `mapstructure:"group_by"`
-	Filter       types.Expression        `mapstructure:"filter"`
+	Name        string                  `mapstructure:"name"`
+	Granularity string                  `mapstructure:"granularity"`
+	Metrics     []string                `mapstructure:"metrics"`
+	GroupBy     []types.GroupDefinition `mapstructure:"group_by"`
+	Filter      types.Expression        `mapstructure:"filter"`
 }
 
 type AWSConfig struct{}

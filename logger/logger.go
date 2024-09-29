@@ -45,6 +45,10 @@ func init() {
 	sugar = logger.Sugar()
 }
 
+func Info(args ...interface{}) {
+	sugar.Info(args)
+}
+
 func Infof(message string, args ...interface{}) {
 	sugar.Infof(message, args)
 }

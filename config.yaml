@@ -2,14 +2,34 @@
 # Metrics specifies which metrics to fetch
 metrics:
   - name: daily_cost
-    poll_interval: 1d
-    granularity: hourly
+    granularity: daily
     metrics:
       - "NetAmortizedCost"
+      - "NetUnblendedCost"
     group_by:
       - type: DIMENSION
         key: SERVICE
     filter:
       dimensions:
         key: SERVICE
-        values: ["EC2 - Other"]
+        values: ["CloudWatch", "EC2 - Other", "DynamoDB"]
+  - name: daily_tax
+    granularity: daily
+    metrics:
+      - "NetAmortizedCost"
+      - "NetUnblendedCost"
+    group_by:
+      - type: DIMENSION
+        key: SERVICE
+    filter:
+      dimensions:
+        key: SERVICE
+        values: ["Tax"]
+  - name: daily_all
+    granularity: daily
+    metrics:
+      - "NetAmortizedCost"
+      - "NetUnblendedCost"
+    group_by:
+      - type: DIMENSION
+        key: SERVICE

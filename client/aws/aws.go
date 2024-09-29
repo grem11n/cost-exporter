@@ -2,6 +2,7 @@ package aws
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strings"
 	"sync"
@@ -35,7 +36,8 @@ func New(config *config.Config) (*Client, error) {
 		return nil, err
 	}
 	return &Client{
-		ce: costexplorer.NewFromConfig(cfg),
+		config: config,
+		ce:     costexplorer.NewFromConfig(cfg),
 	}, nil
 }
 
@@ -50,6 +52,10 @@ func (c *Client) GetCostAndUsageMatrics() (*cache.RawCache, error) {
 			var err error
 			// We assume we are on the page 0 the first time, hence pageToken == 0
 			out, err := c.getCostAndUsageMetric(grMetric, nil)
+			// Return whatever is in err on empry output
+			if out == nil {
+				return err
+			}
 			mu.Lock()
 			results = append(results, out)
 			mu.Unlock()
@@ -70,7 +76,10 @@ func (c *Client) GetCostAndUsageMatrics() (*cache.RawCache, error) {
 }
 
 func (c *Client) getCostAndUsageMetric(metric config.MetricsConfig, pageToken *string) (*costexplorer.GetCostAndUsageOutput, error) {
-	input := c.buildCostAndUsageInput(metric, pageToken)
+	input, err := c.buildCostAndUsageInput(metric, pageToken)
+	if err != nil {
+		return nil, err
+	}
 
 	out, err := c.ce.GetCostAndUsage(context.TODO(), input)
 	if err != nil {
@@ -81,13 +90,28 @@ func (c *Client) getCostAndUsageMetric(metric config.MetricsConfig, pageToken *s
 
 // Build the input separately, since filters cannot be empty when making a query
 // But they can be empty in the config
-func (c *Client) buildCostAndUsageInput(metric config.MetricsConfig, pageToken *string) *costexplorer.GetCostAndUsageInput {
-	interval, err := time.ParseDuration(metric.PollInterval)
-	if err != nil || interval == 0 {
-		interval = time.Duration(defaultPollInterval) * time.Hour
+func (c *Client) buildCostAndUsageInput(metric config.MetricsConfig, pageToken *string) (*costexplorer.GetCostAndUsageInput, error) {
+	nowUtc := time.Now().UTC()
+	var endDate string
+	var startDate string
+
+	// AWS requires different time formats depending on granularity
+	switch strings.ToLower(metric.Granularity) {
+	case "monthly":
+		interval, _ := time.ParseDuration("731h") // 1 month
+		endDate = nowUtc.Format("2006-01-02")
+		startDate = nowUtc.Add(-interval).Format("2006-01-02")
+	case "daily":
+		interval, _ := time.ParseDuration("24h") // 1 day
+		endDate = nowUtc.Format("2006-01-02")
+		startDate = nowUtc.Add(-interval).Format("2006-01-02")
+	case "hourly":
+		interval, _ := time.ParseDuration("1h") // 1 hour
+		endDate = nowUtc.Format(time.RFC3339)
+		startDate = nowUtc.Add(-interval).Format(time.RFC3339)
+	default:
+		return nil, fmt.Errorf("Unsupported granularity: %s. Supported: monthly, daily, hourly", metric.Granularity)
 	}
-	endDate := time.Now().UTC().Format(time.RFC3339)
-	startDate := time.Now().Add(-interval).UTC().Format(time.RFC3339)
 
 	if reflect.ValueOf(metric.Filter).IsZero() {
 		return &costexplorer.GetCostAndUsageInput{
@@ -99,7 +123,7 @@ func (c *Client) buildCostAndUsageInput(metric config.MetricsConfig, pageToken *
 			Metrics:       metric.Metrics,
 			GroupBy:       metric.GroupBy,
 			NextPageToken: pageToken,
-		}
+		}, nil
 	}
 	return &costexplorer.GetCostAndUsageInput{
 		TimePeriod: &types.DateInterval{
@@ -111,5 +135,5 @@ func (c *Client) buildCostAndUsageInput(metric config.MetricsConfig, pageToken *
 		GroupBy:       metric.GroupBy,
 		Filter:        &metric.Filter,
 		NextPageToken: pageToken,
-	}
+	}, nil
 }

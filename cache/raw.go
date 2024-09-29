@@ -22,7 +22,8 @@ func GetRawCache() *RawCache {
 		lock.Lock()
 		defer lock.Unlock()
 		if rawCacheInstance == nil {
-			logger.Infof("Creating a new raw cache since it doesn't exist")
+			logger.Info("Creating a new raw cache since it doesn't exist")
+			rawCacheInstance = &RawCache{}
 		}
 	}
 	return rawCacheInstance

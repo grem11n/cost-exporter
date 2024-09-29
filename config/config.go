@@ -46,7 +46,6 @@ func New(configPath string) (*Config, error) {
 	if err := viper.Unmarshal(&config); err != nil {
 		return nil, fmt.Errorf("Unable to read the config file %s: %w", configPath, err)
 	}
-	fmt.Println(config)
 
 	if err := validate(&config); err != nil {
 		return nil, fmt.Errorf("Unable to read the config file %s: %w", configPath, err)
