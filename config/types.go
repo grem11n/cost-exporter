@@ -5,8 +5,7 @@ import (
 )
 
 type Config struct {
-	AWS     AWSConfig       `mapstructure:"aws"`
-	Metrics []MetricsConfig `mapstructure:"metrics"`
+	AWS     *AWSConfig      `mapstructure:"aws"`
 	Outputs []OutputsConfig `mapstructure:"outputs"`
 }
 
@@ -19,15 +18,33 @@ type MetricsConfig struct {
 	Filter      types.Expression        `mapstructure:"filter"`
 }
 
-type AWSConfig struct{}
+type AWSConfig struct {
+	Metrics []MetricsConfig `mapstructure:"metrics"`
+}
+
+// Enum values for output types
+type OutputType string
+
+const (
+	OutputTypeHTTP   OutputType = "http"
+	OutputTypeStdOut OutputType = "stdout"
+)
+
+// Enum type for available converters
+type OutputConverter string
+
+const (
+	OutputConverterPrometheus OutputConverter = "prometheus"
+)
 
 // OutputsConfig holds configuration specific for each output implementation.
 type OutputsConfig struct {
-	Prometheus PrometheusConfig `mapstructure:"prometheus"`
+	Type      OutputType
+	Converter OutputConverter
 }
 
 // PrometheusConfig holds configuration for HTTP output in Prometheus format.
 type PrometheusConfig struct {
-	Host string
-	Port int64
+	Host string `mapstructure:"host"`
+	Port int64  `mapstructure:"port"`
 }

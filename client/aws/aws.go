@@ -12,6 +12,7 @@ import (
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer"
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer/types"
+	"github.com/aws/smithy-go/middleware"
 	"github.com/grem11n/aws-cost-meter/cache"
 	"github.com/grem11n/aws-cost-meter/config"
 	"github.com/grem11n/aws-cost-meter/logger"
@@ -23,11 +24,11 @@ const (
 )
 
 type Client struct {
-	config *config.Config
+	config *config.AWSConfig
 	ce     *costexplorer.Client
 }
 
-func New(config *config.Config) (*Client, error) {
+func New(config *config.AWSConfig) (*Client, error) {
 	cfg, err := awsConfig.LoadDefaultConfig(context.TODO(),
 		awsConfig.WithRegion("us-east-1"), // Const Explorer is global, hence us-east-1
 	)
@@ -41,8 +42,128 @@ func New(config *config.Config) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) GetCostAndUsageMatrics() (*cache.RawCache, error) {
+func (c *Client) GetCostAndUsageMatrics() error {
+	// Initiate the cache or get an instance of it, if it's already created
+	// Cache is global for the app, so we don't need to return it explicitly
 	var cache = cache.GetRawCache()
+	//TODO: remove after tests
+	// Do not make requests to AWS, because  they are costly.
+	// Return a stub instead
+	cache.CostAndUsageMetrics = []*costexplorer.GetCostAndUsageOutput{
+		{
+			DimensionValueAttributes: []types.DimensionValuesWithAttributes{},
+			GroupDefinitions: []types.GroupDefinition{
+				{
+					Key:  aws.String("SERVICE"),
+					Type: types.GroupDefinitionTypeDimension,
+				},
+			},
+			NextPageToken: nil,
+			ResultsByTime: []types.ResultByTime{
+				{
+					Estimated: true,
+					Groups: []types.Group{
+						{
+							Keys: []string{"AWS Cost Explorer"},
+							Metrics: map[string]types.MetricValue{
+								"NetAmortizedCost": {
+									Amount: aws.String("0.19"),
+									Unit:   aws.String("USD"),
+								},
+								"NetUnblendedCost": {
+									Amount: aws.String("0.19"),
+									Unit:   aws.String("USD"),
+								},
+							},
+						},
+					},
+					TimePeriod: &types.DateInterval{
+						Start: aws.String("2024-10-01"),
+						End:   aws.String("2024-10-02"),
+					},
+					Total: map[string]types.MetricValue{},
+				},
+			},
+			ResultMetadata: middleware.Metadata{},
+		},
+		{
+			DimensionValueAttributes: []types.DimensionValuesWithAttributes{},
+			GroupDefinitions: []types.GroupDefinition{
+				{
+					Key:  aws.String("SERVICE"),
+					Type: types.GroupDefinitionTypeDimension,
+				},
+			},
+			NextPageToken: nil,
+			ResultsByTime: []types.ResultByTime{
+				{
+					Estimated: true,
+					Groups: []types.Group{
+						{
+							Keys: []string{"AWS Cost Explorer"},
+							Metrics: map[string]types.MetricValue{
+								"NetAmortizedCost": {
+									Amount: aws.String("0.19"),
+									Unit:   aws.String("USD"),
+								},
+								"NetUnblendedCost": {
+									Amount: aws.String("0.19"),
+									Unit:   aws.String("USD"),
+								},
+							},
+						},
+						{
+							Keys: []string{"Amazon DynamoDB"},
+							Metrics: map[string]types.MetricValue{
+								"NetAmortizedCost": {
+									Amount: aws.String("0"),
+									Unit:   aws.String("USD"),
+								},
+								"NetUnblendedCost": {
+									Amount: aws.String("0"),
+									Unit:   aws.String("USD"),
+								},
+							},
+						},
+						{
+							Keys: []string{"Amazon Simple Storage Service"},
+							Metrics: map[string]types.MetricValue{
+								"NetAmortizedCost": {
+									Amount: aws.String("5"),
+									Unit:   aws.String("USD"),
+								},
+								"NetUnblendedCost": {
+									Amount: aws.String("5"),
+									Unit:   aws.String("USD"),
+								},
+							},
+						},
+						{
+							Keys: []string{"AmazonCloudWatch"},
+							Metrics: map[string]types.MetricValue{
+								"NetAmortizedCost": {
+									Amount: aws.String("0.31"),
+									Unit:   aws.String("USD"),
+								},
+								"NetUnblendedCost": {
+									Amount: aws.String("0.35"),
+									Unit:   aws.String("USD"),
+								},
+							},
+						},
+					},
+					TimePeriod: &types.DateInterval{
+						Start: aws.String("2024-10-01"),
+						End:   aws.String("2024-10-02"),
+					},
+					Total: map[string]types.MetricValue{},
+				},
+			},
+			ResultMetadata: middleware.Metadata{},
+		},
+	}
+	return nil
+
 	var results []*costexplorer.GetCostAndUsageOutput
 	var mu sync.Mutex
 	var grp errgroup.Group
@@ -69,10 +190,10 @@ func (c *Client) GetCostAndUsageMatrics() (*cache.RawCache, error) {
 		})
 	}
 	if err := grp.Wait(); err != nil {
-		return nil, err
+		return err
 	}
 	cache.CostAndUsageMetrics = results
-	return cache, nil
+	return nil
 }
 
 func (c *Client) getCostAndUsageMetric(metric config.MetricsConfig, pageToken *string) (*costexplorer.GetCostAndUsageOutput, error) {

@@ -54,11 +54,12 @@ func New(configPath string) (*Config, error) {
 	return &config, nil
 }
 
+// Move these validations as well as types to the AWS package
 func validate(config *Config) error {
 	if err := validateEmptyMetrics(config); err != nil {
 		return err
 	}
-	for _, metric := range config.Metrics {
+	for _, metric := range config.AWS.Metrics {
 		// Validate metric type
 		if err := validateMetricType(&metric); err != nil {
 			return err
@@ -72,7 +73,7 @@ func validate(config *Config) error {
 }
 
 func validateEmptyMetrics(config *Config) error {
-	if len(config.Metrics) == 0 {
+	if len(config.AWS.Metrics) == 0 {
 		return fmt.Errorf("No metrics found in config")
 	}
 	return nil

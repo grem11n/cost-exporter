@@ -1,35 +1,38 @@
 ---
-# Metrics specifies which metrics to fetch
-metrics:
-  - name: daily_cost
-    granularity: daily
-    metrics:
-      - "NetAmortizedCost"
-      - "NetUnblendedCost"
-    group_by:
-      - type: DIMENSION
-        key: SERVICE
-    filter:
-      dimensions:
-        key: SERVICE
-        values: ["CloudWatch", "EC2 - Other", "DynamoDB"]
-  - name: daily_tax
-    granularity: daily
-    metrics:
-      - "NetAmortizedCost"
-      - "NetUnblendedCost"
-    group_by:
-      - type: DIMENSION
-        key: SERVICE
-    filter:
-      dimensions:
-        key: SERVICE
-        values: ["Tax"]
-  - name: daily_all
-    granularity: daily
-    metrics:
-      - "NetAmortizedCost"
-      - "NetUnblendedCost"
-    group_by:
-      - type: DIMENSION
-        key: SERVICE
+aws:
+  # Metrics specifies which metrics to fetch
+  metrics:
+  #  - name: daily_cost
+  #    granularity: daily
+  #    metrics:
+  #      - "NetAmortizedCost"
+  #      - "NetUnblendedCost"
+  #    group_by:
+  #      - type: DIMENSION
+  #        key: SERVICE
+  #    filter:
+  #      dimensions:
+  #        key: SERVICE
+  #        values: ["CloudWatch", "EC2 - Other", "DynamoDB"]
+    - granularity: daily
+      metrics:
+        - "NetAmortizedCost"
+        - "NetUnblendedCost"
+      group_by:
+        - type: DIMENSION
+          key: SERVICE
+      filter:
+        dimensions:
+          key: SERVICE
+          values: ["AWS Cost Explorer"]
+    - granularity: daily
+      metrics:
+        - "NetAmortizedCost"
+        - "NetUnblendedCost"
+      group_by:
+        - type: DIMENSION
+          key: SERVICE
+
+outputs:
+  - type: "http"
+    converter: "prometheus"

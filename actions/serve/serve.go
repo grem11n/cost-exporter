@@ -1,29 +1,32 @@
 package serve
 
 import (
-	"fmt"
-
+	"github.com/grem11n/aws-cost-meter/cache"
 	"github.com/grem11n/aws-cost-meter/client/aws"
 	"github.com/grem11n/aws-cost-meter/config"
 	logger "github.com/grem11n/aws-cost-meter/logger"
+	"github.com/grem11n/aws-cost-meter/outputs/prometheus"
 )
 
 func Run(config *config.Config) error {
-	awsClient, err := aws.New(config)
+	awsClient, err := aws.New(config.AWS)
 	if err != nil {
 		logger.Errorf("Unable to create AWS client: %w", err)
 		return err
 	}
-	metrics, err := awsClient.GetCostAndUsageMatrics()
-	if err != nil {
+
+	if err = awsClient.GetCostAndUsageMatrics(); err != nil {
 		logger.Errorf("Unable to get cost and usage metrics: %w", err)
 		return err
 	}
-	for _, metric := range metrics.CostAndUsageMetrics {
-		fmt.Printf("Metrics: %+v\n", metric)
-		for k, v := range metric.ResultsByTime[0].Total {
-			fmt.Printf("%s: %v %v\n", k, *v.Amount, *v.Unit)
-		}
+
+	// Get the raw metrics cache
+	rawMetrics := cache.GetRawCache()
+	if err := prometheus.ConvertRawMetrics(rawMetrics); err != nil {
+		return err
 	}
+
+	// Execute a given output.
+	//fmt.Printf("Config: %+v\n", config)
 	return nil
 }
