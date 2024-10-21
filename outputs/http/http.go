@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 
-	"github.com/grem11n/aws-cost-meter/cache"
 	"github.com/grem11n/aws-cost-meter/config"
 	"github.com/grem11n/aws-cost-meter/logger"
 )
@@ -14,9 +14,10 @@ type httpOut struct {
 	config config.OutputsConfig
 	server *http.Server
 	mux    *http.ServeMux
+	cache  *sync.Map
 }
 
-func New(config config.OutputsConfig) *httpOut {
+func New(config config.OutputsConfig, cache *sync.Map) *httpOut {
 	port := 3333
 	mux := http.NewServeMux()
 	server := &http.Server{
@@ -27,6 +28,7 @@ func New(config config.OutputsConfig) *httpOut {
 		config: config,
 		server: server,
 		mux:    mux,
+		cache:  cache,
 	}
 }
 
@@ -39,13 +41,20 @@ func (h *httpOut) Output() error {
 }
 
 func (h *httpOut) handleRoot(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, "Welcome to Costs Exporter! Check out the /metrics endpoint")
+	if _, err := io.WriteString(w, "Welcome to Costs Exporter! Check out the /metrics endpoint"); err != nil {
+		logger.Error(err)
+	}
 }
 
 func (h *httpOut) handleMetrics(w http.ResponseWriter, _ *http.Request) {
-	mainCache := cache.GetMainCache()
-	fmt.Printf("%+v\n", mainCache.Cache)
-	res := mainCache.Cache[string(h.config.Converter)]
-	logger.Info(res.String())
-	io.WriteString(w, res.String())
+	logger.Info("Got request for /metrics")
+	res, ok := h.cache.Load("aws_processed") // hardcoded for test
+	if !ok {
+		logger.Warn("cannot find metrics in the metric cache")
+	}
+	out := res.(string) // because we write string
+	logger.Debug(out)
+	if _, err := io.WriteString(w, out); err != nil {
+		logger.Error(err)
+	}
 }

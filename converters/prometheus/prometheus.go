@@ -1,18 +1,24 @@
 package prometheus
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 
 	"github.com/VictoriaMetrics/metrics"
-	"github.com/grem11n/aws-cost-meter/cache"
+	"github.com/aws/aws-sdk-go-v2/service/costexplorer"
 	"github.com/grem11n/aws-cost-meter/logger"
 	"github.com/iancoleman/strcase"
 )
 
 // TODO: Move to config
-const defaultMetricPrefix = "ce_exporter"
+const (
+	awsCachePrefix          = "aws"
+	awsCacheProcessedPrefix = "aws_processed"
+	defaultMetricPrefix     = "ce_exporter"
+)
 
 type PrometheusConfig struct{}
 
@@ -20,34 +26,38 @@ func (p *PrometheusConfig) Output() error {
 	return nil
 }
 
-func ConvertRawMetrics(raw *cache.RawCache) error {
-	var mainCache = cache.GetMainCache()
-	metricNameMap, err := discoverMetrics(raw)
+func ConvertAWSMetrics(cache *sync.Map) {
+	awsMetricsRaw, ok := cache.Load(awsCachePrefix)
+	if !ok {
+		logger.Warn("cache doesn't have %s metrics", awsCachePrefix)
+	}
+
+	awsMetrics := awsMetricsRaw.([]costexplorer.GetCostAndUsageOutput)
+	metricNameMap, err := discoverAWSMetrics(awsMetrics)
 	if err != nil {
-		return err
+		logger.Error(err)
 	}
 
 	vm := metrics.NewSet()
 	for name, groups := range metricNameMap {
 		for group, amount := range groups {
 			metricName := fmt.Sprintf("%s_%s{job=\"%s\",dimension=\"%s\"}", defaultMetricPrefix, strcase.ToSnake(name), "ce-exporter", group)
-			fmt.Printf("name: %s. amount: %f", metricName, amount)
 			vm.GetOrCreateGauge(metricName, func() float64 {
 				return amount
 			})
 		}
 	}
-	cell := mainCache.Cache["prometheus"] // hardcoded
-	vm.WritePrometheus(&cell)
-	return nil
+	var res bytes.Buffer
+	vm.WritePrometheus(&res)
+	cache.LoadOrStore(awsCacheProcessedPrefix, res.String())
 }
 
 // Analyze the raw metrics structure to discover, which metrics are present
-func discoverMetrics(raw *cache.RawCache) (map[string]map[string]float64, error) {
+func discoverAWSMetrics(metrics []costexplorer.GetCostAndUsageOutput) (map[string]map[string]float64, error) {
 	// Using maps to convert the raw format and deduplicate metrics "in flight"
 	var metricNameMap = make(map[string]map[string]float64)
 
-	for _, metrics := range raw.CostAndUsageMetrics {
+	for _, metrics := range metrics {
 		// There is only a single element in the .ResultsByTime, because of how we craft the time period in the initial request
 		if len(metrics.ResultsByTime) == 0 {
 			return nil, errors.New("No metrics were found!")

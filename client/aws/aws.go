@@ -64,13 +64,13 @@ func generateInitialInputs(metrics []config.MetricsConfig) *goconcurrentqueue.Fi
 }
 
 // GetCostAndUsageMatrics gets CostAndUsage information from AWS in the background
-func (c *Client) GetCostAndUsageMatrics(cache *sync.Map) {
+func (c *Client) GetCostAndUsageMatricsConcurrently(cache *sync.Map) {
 	for {
-		c.getCostAndUsageMatrics(cache)
+		c.GetCostAndUsageMatrics(cache)
 	}
 }
 
-func (c *Client) getCostAndUsageMatrics(cache *sync.Map) {
+func (c *Client) GetCostAndUsageMatrics(cache *sync.Map) {
 	//TODO: remove after tests
 	// Do not make requests to AWS, because  they are costly.
 	// Return a stub instead

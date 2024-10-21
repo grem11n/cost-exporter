@@ -53,6 +53,10 @@ func Infof(message string, args ...interface{}) {
 	sugar.Infof(message, args)
 }
 
+func Warn(args ...interface{}) {
+	sugar.Warn(args)
+}
+
 func Warnf(message string, args ...interface{}) {
 	sugar.Warnf(message, args)
 }
@@ -67,4 +71,8 @@ func Errorf(message string, args ...interface{}) {
 
 func Fatalf(message string, args ...interface{}) {
 	sugar.Fatalf(message, args)
+}
+
+func Debug(args ...interface{}) {
+	sugar.Debug(args)
 }

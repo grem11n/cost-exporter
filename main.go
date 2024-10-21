@@ -4,20 +4,19 @@ Copyright © 2024 Yurii Rochniak <yurii@rochniak.dev>
 package main
 
 import (
-	"fmt"
 	"sync"
-	"time"
 
 	"github.com/grem11n/aws-cost-meter/client/aws"
 	"github.com/grem11n/aws-cost-meter/config"
+	"github.com/grem11n/aws-cost-meter/converters/prometheus"
 	"github.com/grem11n/aws-cost-meter/logger"
+	httpOut "github.com/grem11n/aws-cost-meter/outputs/http"
 	flag "github.com/spf13/pflag"
 )
 
 var (
-	configPath   *string = flag.StringP("config", "c", "./config.yaml", "Path to the configuration file")
-	rawCache     sync.Map
-	metricsCache sync.Map
+	configPath *string = flag.StringP("config", "c", "./config.yaml", "Path to the configuration file")
+	cache      sync.Map
 )
 
 func main() {
@@ -31,22 +30,18 @@ func main() {
 		logger.Errorf("Unable to create AWS client: %w", err)
 	}
 
+	// Get initial metrics
+	awsClient.GetCostAndUsageMatrics(&cache)
+
 	// Get AWS cost metrics in background
-	go awsClient.GetCostAndUsageMatrics(&rawCache)
-
-	time.Sleep(5 * time.Second)
-	got, ok := rawCache.Load("aws")
-	if !ok {
-		fmt.Println("chache is empty")
-	}
-	fmt.Printf("%+v", got)
-
-	//// Get the raw metrics cache
-	//if err := prometheus.ConvertRawMetrics(rawMetrics); err != nil {
-	//	logger.Errorf(fmt.Sprintf("%s", err))
-	//}
+	go awsClient.GetCostAndUsageMatricsConcurrently(&cache)
 
 	//// TODO: Move it to a registry
-	//srv := httpOut.New(conf.Outputs[0])
-	//srv.Output()
+	// Convert metrics in another goroutine
+	go prometheus.ConvertAWSMetrics(&cache)
+
+	srv := httpOut.New(conf.Outputs[0], &cache)
+	if err := srv.Output(); err != nil {
+		logger.Fatalf("cannot start the web server", err)
+	}
 }
