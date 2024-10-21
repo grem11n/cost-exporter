@@ -12,11 +12,9 @@ import (
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer"
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer/types"
-	"github.com/aws/smithy-go/middleware"
-	"github.com/grem11n/aws-cost-meter/cache"
+	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/grem11n/aws-cost-meter/config"
 	"github.com/grem11n/aws-cost-meter/logger"
-	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -26,6 +24,13 @@ const (
 type Client struct {
 	config *config.AWSConfig
 	ce     *costexplorer.Client
+	inputs *goconcurrentqueue.FixedFIFO
+	mu     sync.Mutex
+}
+
+type input struct {
+	ceInput *costexplorer.GetCostAndUsageInput
+	delayTs int64
 }
 
 func New(config *config.AWSConfig) (*Client, error) {
@@ -36,168 +41,95 @@ func New(config *config.AWSConfig) (*Client, error) {
 		logger.Errorf("unable to load AWS config: %w", err)
 		return nil, err
 	}
+	inputs := generateInitialInputs(config.Metrics)
 	return &Client{
 		config: config,
 		ce:     costexplorer.NewFromConfig(cfg),
+		inputs: inputs,
+		mu:     sync.Mutex{},
 	}, nil
 }
 
-func (c *Client) GetCostAndUsageMatrics() error {
-	// Initiate the cache or get an instance of it, if it's already created
-	// Cache is global for the app, so we don't need to return it explicitly
-	var cache = cache.GetRawCache()
+func generateInitialInputs(metrics []config.MetricsConfig) *goconcurrentqueue.FixedFIFO {
+	inputs := goconcurrentqueue.NewFixedFIFO(len(metrics))
+	for _, metric := range metrics {
+		el, err := buildCostAndUsageInput(metric, nil)
+		if err != nil {
+			logger.Errorf("Cannot build AWS CostAndUsageInput", err)
+		}
+		inp := input{ceInput: el, delayTs: time.Now().Unix()}
+		inputs.Enqueue(inp)
+	}
+	return inputs
+}
+
+// GetCostAndUsageMatrics gets CostAndUsage information from AWS in the background
+func (c *Client) GetCostAndUsageMatrics(cache *sync.Map) {
+	for {
+		c.getCostAndUsageMatrics(cache)
+	}
+}
+
+func (c *Client) getCostAndUsageMatrics(cache *sync.Map) {
 	//TODO: remove after tests
 	// Do not make requests to AWS, because  they are costly.
 	// Return a stub instead
-	cache.CostAndUsageMetrics = []*costexplorer.GetCostAndUsageOutput{
-		{
-			DimensionValueAttributes: []types.DimensionValuesWithAttributes{},
-			GroupDefinitions: []types.GroupDefinition{
-				{
-					Key:  aws.String("SERVICE"),
-					Type: types.GroupDefinitionTypeDimension,
-				},
-			},
-			NextPageToken: nil,
-			ResultsByTime: []types.ResultByTime{
-				{
-					Estimated: true,
-					Groups: []types.Group{
-						{
-							Keys: []string{"AWS Cost Explorer"},
-							Metrics: map[string]types.MetricValue{
-								"NetAmortizedCost": {
-									Amount: aws.String("0.19"),
-									Unit:   aws.String("USD"),
-								},
-								"NetUnblendedCost": {
-									Amount: aws.String("0.19"),
-									Unit:   aws.String("USD"),
-								},
-							},
-						},
-					},
-					TimePeriod: &types.DateInterval{
-						Start: aws.String("2024-10-01"),
-						End:   aws.String("2024-10-02"),
-					},
-					Total: map[string]types.MetricValue{},
-				},
-			},
-			ResultMetadata: middleware.Metadata{},
-		},
-		{
-			DimensionValueAttributes: []types.DimensionValuesWithAttributes{},
-			GroupDefinitions: []types.GroupDefinition{
-				{
-					Key:  aws.String("SERVICE"),
-					Type: types.GroupDefinitionTypeDimension,
-				},
-			},
-			NextPageToken: nil,
-			ResultsByTime: []types.ResultByTime{
-				{
-					Estimated: true,
-					Groups: []types.Group{
-						{
-							Keys: []string{"AWS Cost Explorer"},
-							Metrics: map[string]types.MetricValue{
-								"NetAmortizedCost": {
-									Amount: aws.String("0.19"),
-									Unit:   aws.String("USD"),
-								},
-								"NetUnblendedCost": {
-									Amount: aws.String("0.19"),
-									Unit:   aws.String("USD"),
-								},
-							},
-						},
-						{
-							Keys: []string{"Amazon DynamoDB"},
-							Metrics: map[string]types.MetricValue{
-								"NetAmortizedCost": {
-									Amount: aws.String("0"),
-									Unit:   aws.String("USD"),
-								},
-								"NetUnblendedCost": {
-									Amount: aws.String("0"),
-									Unit:   aws.String("USD"),
-								},
-							},
-						},
-						{
-							Keys: []string{"Amazon Simple Storage Service"},
-							Metrics: map[string]types.MetricValue{
-								"NetAmortizedCost": {
-									Amount: aws.String("5"),
-									Unit:   aws.String("USD"),
-								},
-								"NetUnblendedCost": {
-									Amount: aws.String("5"),
-									Unit:   aws.String("USD"),
-								},
-							},
-						},
-						{
-							Keys: []string{"AmazonCloudWatch"},
-							Metrics: map[string]types.MetricValue{
-								"NetAmortizedCost": {
-									Amount: aws.String("0.31"),
-									Unit:   aws.String("USD"),
-								},
-								"NetUnblendedCost": {
-									Amount: aws.String("0.35"),
-									Unit:   aws.String("USD"),
-								},
-							},
-						},
-					},
-					TimePeriod: &types.DateInterval{
-						Start: aws.String("2024-10-01"),
-						End:   aws.String("2024-10-02"),
-					},
-					Total: map[string]types.MetricValue{},
-				},
-			},
-			ResultMetadata: middleware.Metadata{},
-		},
-	}
-	return nil
 
-	var results []*costexplorer.GetCostAndUsageOutput
-	var mu sync.Mutex
-	var grp errgroup.Group
-	for _, metric := range c.config.Metrics {
-		grMetric := metric
-		grp.Go(func() error {
-			var err error
-			// We assume we are on the page 0 the first time, hence pageToken == 0
-			out, err := c.getCostAndUsageMetric(grMetric, nil)
-			// Return whatever is in err on empry output
-			if out == nil {
-				return err
-			}
-			mu.Lock()
-			results = append(results, out)
-			mu.Unlock()
-			if out.NextPageToken != nil {
-				out, err = c.getCostAndUsageMetric(grMetric, out.NextPageToken)
-				mu.Lock()
-				results = append(results, out)
-				mu.Unlock()
-			}
-			return err
-		})
+	var results []costexplorer.GetCostAndUsageOutput
+	obj, err := c.inputs.DequeueOrWaitForNextElement()
+	in := obj.(input) // this type cast should be safe, since we control inputs
+	if err != nil {
+		logger.Error(err)
 	}
-	if err := grp.Wait(); err != nil {
-		return err
+	// Check if the metrics are up for refresh
+	if in.delayTs > time.Now().Unix() {
+		return
 	}
-	cache.CostAndUsageMetrics = results
-	return nil
+	// TODO: Debug to not contact AWS
+	out := CeStub[1]
+
+	//var err error
+	//out, err := c.ce.GetCostAndUsage(context.TODO(), in.ceInput)
+	//if err != nil {
+	//	logger.Errorf("Cannot get CostAndUsage metrics", err)
+	//	// Insert 5 sec delay before retry
+	//	c.insertDelay(i, time.Now().Add(5*time.Second).Unix())
+	//}
+	//if out == nil {
+	//	logger.Error("CostAndUsage metrics are empty")
+	//	continue
+	//}
+	c.mu.Lock()
+	results = append(results, *out)
+	c.mu.Unlock()
+	//if out.NextPageToken != nil {
+	//	in.ceInput.NextPageToken = out.NextPageToken
+	//	out, err = c.ce.GetCostAndUsage(context.TODO(), in.ceInput)
+	//	if err != nil {
+	//		logger.Errorf("Cannot get CostAndUsage metrics", err)
+	//		// Insert 5 sec delay before retry
+	//		c.insertDelay(i, time.Now().Add(5*time.Second).Unix())
+	//	}
+	//	c.mu.Lock()
+	//	results = append(results, out)
+	//	c.mu.Unlock()
+	//}
+	// There is no need to delay for the whole month
+	delayTs := time.Now().Add(24 * time.Hour).Unix()
+	// If we need hourly metrics, we need to fetch them every hour
+	if strings.EqualFold(string(in.ceInput.Granularity), "hourly") {
+		delayTs = time.Now().Add(1 * time.Hour).Unix()
+	}
+	in.delayTs = delayTs
+	err = c.inputs.Enqueue(in)
+	if err != nil {
+		logger.Error(err)
+	}
+	cache.Store("aws", results)
 }
 
 func (c *Client) getCostAndUsageMetric(metric config.MetricsConfig, pageToken *string) (*costexplorer.GetCostAndUsageOutput, error) {
-	input, err := c.buildCostAndUsageInput(metric, pageToken)
+	input, err := buildCostAndUsageInput(metric, pageToken)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +143,7 @@ func (c *Client) getCostAndUsageMetric(metric config.MetricsConfig, pageToken *s
 
 // Build the input separately, since filters cannot be empty when making a query
 // But they can be empty in the config
-func (c *Client) buildCostAndUsageInput(metric config.MetricsConfig, pageToken *string) (*costexplorer.GetCostAndUsageInput, error) {
+func buildCostAndUsageInput(metric config.MetricsConfig, pageToken *string) (*costexplorer.GetCostAndUsageInput, error) {
 	nowUtc := time.Now().UTC()
 	var endDate string
 	var startDate string

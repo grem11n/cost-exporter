@@ -3,7 +3,6 @@ package prometheus
 import (
 	"errors"
 	"fmt"
-	"os"
 	"strconv"
 
 	"github.com/VictoriaMetrics/metrics"
@@ -22,11 +21,11 @@ func (p *PrometheusConfig) Output() error {
 }
 
 func ConvertRawMetrics(raw *cache.RawCache) error {
+	var mainCache = cache.GetMainCache()
 	metricNameMap, err := discoverMetrics(raw)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Metrics: %+v\n", metricNameMap)
 
 	vm := metrics.NewSet()
 	for name, groups := range metricNameMap {
@@ -38,7 +37,8 @@ func ConvertRawMetrics(raw *cache.RawCache) error {
 			})
 		}
 	}
-	vm.WritePrometheus(os.Stdout)
+	cell := mainCache.Cache["prometheus"] // hardcoded
+	vm.WritePrometheus(&cell)
 	return nil
 }
 

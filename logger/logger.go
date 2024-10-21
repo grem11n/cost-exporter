@@ -57,6 +57,10 @@ func Warnf(message string, args ...interface{}) {
 	sugar.Warnf(message, args)
 }
 
+func Error(args ...interface{}) {
+	sugar.Error(args)
+}
+
 func Errorf(message string, args ...interface{}) {
 	sugar.Errorf(message, args)
 }
