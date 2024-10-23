@@ -1,13 +1,22 @@
 package httpOut
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/grem11n/aws-cost-meter/config"
+	"github.com/grem11n/aws-cost-meter/converters/prometheus"
 	"github.com/grem11n/aws-cost-meter/logger"
+)
+
+const (
+	cachePrefix = "converted_prometheus"
+	// Since metrics are really updated at least each hour, we can cache end results for at least an hour
+	defaultTTL = 1 * time.Hour
 )
 
 type httpOut struct {
@@ -15,6 +24,11 @@ type httpOut struct {
 	server *http.Server
 	mux    *http.ServeMux
 	cache  *sync.Map
+}
+
+type result struct {
+	data   bytes.Buffer
+	expire int64
 }
 
 func New(config config.OutputsConfig, cache *sync.Map) *httpOut {
@@ -48,13 +62,17 @@ func (h *httpOut) handleRoot(w http.ResponseWriter, r *http.Request) {
 
 func (h *httpOut) handleMetrics(w http.ResponseWriter, _ *http.Request) {
 	logger.Info("Got request for /metrics")
-	res, ok := h.cache.Load("aws_processed") // hardcoded for test
-	if !ok {
-		logger.Warn("cannot find metrics in the metric cache")
+	// Checking the results in cache first
+	r, ok := h.cache.Load(cachePrefix)
+	res, ok := r.(result)
+	if !ok || res.expire < time.Now().Unix() {
+		logger.Debug("output cache miss")
+		conv := prometheus.ConvertAWSMetrics(h.cache)
+		res = result{data: conv, expire: time.Now().Add(defaultTTL).Unix()}
+		h.cache.Swap(cachePrefix, res)
 	}
-	out := res.(string) // because we write string
-	logger.Debug(out)
-	if _, err := io.WriteString(w, out); err != nil {
+	logger.Debug(res.data.String())
+	if _, err := io.WriteString(w, res.data.String()); err != nil {
 		logger.Error(err)
 	}
 }

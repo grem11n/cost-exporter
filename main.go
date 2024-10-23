@@ -8,7 +8,6 @@ import (
 
 	"github.com/grem11n/aws-cost-meter/client/aws"
 	"github.com/grem11n/aws-cost-meter/config"
-	"github.com/grem11n/aws-cost-meter/converters/prometheus"
 	"github.com/grem11n/aws-cost-meter/logger"
 	httpOut "github.com/grem11n/aws-cost-meter/outputs/http"
 	flag "github.com/spf13/pflag"
@@ -25,20 +24,16 @@ func main() {
 	if err != nil {
 		logger.Fatalf("Unable to read the config file: ", err)
 	}
-	awsClient, err := aws.New(conf.AWS)
+	awsClient, err := aws.New(conf.AWS, &cache)
 	if err != nil {
 		logger.Errorf("Unable to create AWS client: %w", err)
 	}
 
 	// Get initial metrics
-	awsClient.GetCostAndUsageMatrics(&cache)
+	awsClient.GetCostAndUsageMatrics()
 
 	// Get AWS cost metrics in background
-	go awsClient.GetCostAndUsageMatricsConcurrently(&cache)
-
-	//// TODO: Move it to a registry
-	// Convert metrics in another goroutine
-	go prometheus.ConvertAWSMetrics(&cache)
+	go awsClient.GetCostAndUsageMatricsLoop()
 
 	srv := httpOut.New(conf.Outputs[0], &cache)
 	if err := srv.Output(); err != nil {

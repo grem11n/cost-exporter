@@ -14,18 +14,18 @@ aws:
   #      dimensions:
   #        key: SERVICE
   #        values: ["CloudWatch", "EC2 - Other", "DynamoDB"]
-    - granularity: daily
-      metrics:
-        - "NetAmortizedCost"
-        - "NetUnblendedCost"
-      group_by:
-        - type: DIMENSION
-          key: SERVICE
-      filter:
-        dimensions:
-          key: SERVICE
-          values: ["AWS Cost Explorer"]
-    - granularity: daily
+  #  - granularity: daily
+  #    metrics:
+  #      - "NetAmortizedCost"
+  #      - "NetUnblendedCost"
+  #    group_by:
+  #      - type: DIMENSION
+  #        key: SERVICE
+  #    filter:
+  #      dimensions:
+  #        key: SERVICE
+  #        values: ["AWS Cost Explorer"]
+    - granularity: "monthly"
       metrics:
         - "NetAmortizedCost"
         - "NetUnblendedCost"

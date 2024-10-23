@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/VictoriaMetrics/metrics"
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer"
@@ -16,23 +18,24 @@ import (
 // TODO: Move to config
 const (
 	awsCachePrefix          = "aws"
-	awsCacheProcessedPrefix = "aws_processed"
+	awsCacheProcessedPrefix = "aws_prometheus"
 	defaultMetricPrefix     = "ce_exporter"
+	defaultCacheTTL         = 1 * time.Hour // the minimal granulatiry of AWS cost metrics
 )
 
-type PrometheusConfig struct{}
+func ConvertAWSMetrics(cache *sync.Map) bytes.Buffer {
+	var awsMetrics []costexplorer.GetCostAndUsageOutput
+	cache.Range(func(key, value any) bool {
+		if strings.HasPrefix(key.(string), "raw_aws") { // hardcode
+			res, ok := value.([]costexplorer.GetCostAndUsageOutput)
+			if !ok {
+				logger.Warn("cache doesn't have %s metrics", awsCachePrefix)
+			}
+			awsMetrics = append(awsMetrics, res...)
+		}
+		return true
+	})
 
-func (p *PrometheusConfig) Output() error {
-	return nil
-}
-
-func ConvertAWSMetrics(cache *sync.Map) {
-	awsMetricsRaw, ok := cache.Load(awsCachePrefix)
-	if !ok {
-		logger.Warn("cache doesn't have %s metrics", awsCachePrefix)
-	}
-
-	awsMetrics := awsMetricsRaw.([]costexplorer.GetCostAndUsageOutput)
 	metricNameMap, err := discoverAWSMetrics(awsMetrics)
 	if err != nil {
 		logger.Error(err)
@@ -49,7 +52,7 @@ func ConvertAWSMetrics(cache *sync.Map) {
 	}
 	var res bytes.Buffer
 	vm.WritePrometheus(&res)
-	cache.LoadOrStore(awsCacheProcessedPrefix, res.String())
+	return res
 }
 
 // Analyze the raw metrics structure to discover, which metrics are present

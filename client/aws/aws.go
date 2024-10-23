@@ -2,6 +2,7 @@ package aws
 
 import (
 	"context"
+	"crypto/md5"
 	"fmt"
 	"reflect"
 	"strings"
@@ -18,7 +19,8 @@ import (
 )
 
 const (
-	defaultPollInterval = 1 // hour, because this is the minimum time granularity
+	defaultPollInterval   = 1         // hour, because this is the minimum time granularity
+	awsMetricsCachePrefix = "raw_aws" // this is important that prefix starts with raw_
 )
 
 type Client struct {
@@ -26,14 +28,15 @@ type Client struct {
 	ce     *costexplorer.Client
 	inputs *goconcurrentqueue.FixedFIFO
 	mu     sync.Mutex
+	cache  *sync.Map
 }
 
 type input struct {
 	ceInput *costexplorer.GetCostAndUsageInput
-	delayTs int64
+	readyTs int64
 }
 
-func New(config *config.AWSConfig) (*Client, error) {
+func New(config *config.AWSConfig, cache *sync.Map) (*Client, error) {
 	cfg, err := awsConfig.LoadDefaultConfig(context.TODO(),
 		awsConfig.WithRegion("us-east-1"), // Const Explorer is global, hence us-east-1
 	)
@@ -47,34 +50,17 @@ func New(config *config.AWSConfig) (*Client, error) {
 		ce:     costexplorer.NewFromConfig(cfg),
 		inputs: inputs,
 		mu:     sync.Mutex{},
+		cache:  cache,
 	}, nil
 }
 
-func generateInitialInputs(metrics []config.MetricsConfig) *goconcurrentqueue.FixedFIFO {
-	inputs := goconcurrentqueue.NewFixedFIFO(len(metrics))
-	for _, metric := range metrics {
-		el, err := buildCostAndUsageInput(metric, nil)
-		if err != nil {
-			logger.Errorf("Cannot build AWS CostAndUsageInput", err)
-		}
-		inp := input{ceInput: el, delayTs: time.Now().Unix()}
-		inputs.Enqueue(inp)
-	}
-	return inputs
-}
-
-// GetCostAndUsageMatrics gets CostAndUsage information from AWS in the background
-func (c *Client) GetCostAndUsageMatricsConcurrently(cache *sync.Map) {
+func (c *Client) GetCostAndUsageMatricsLoop() {
 	for {
-		c.GetCostAndUsageMatrics(cache)
+		c.GetCostAndUsageMatrics()
 	}
 }
 
-func (c *Client) GetCostAndUsageMatrics(cache *sync.Map) {
-	//TODO: remove after tests
-	// Do not make requests to AWS, because  they are costly.
-	// Return a stub instead
-
+func (c *Client) GetCostAndUsageMatrics() {
 	var results []costexplorer.GetCostAndUsageOutput
 	obj, err := c.inputs.DequeueOrWaitForNextElement()
 	in := obj.(input) // this type cast should be safe, since we control inputs
@@ -82,63 +68,71 @@ func (c *Client) GetCostAndUsageMatrics(cache *sync.Map) {
 		logger.Error(err)
 	}
 	// Check if the metrics are up for refresh
-	if in.delayTs > time.Now().Unix() {
+	if in.readyTs > time.Now().Unix() {
+		// Put the input back in the queue
+		c.enqueuWithTs(in, in.readyTs)
 		return
 	}
 	// TODO: Debug to not contact AWS
-	out := CeStub[1]
+	//logger.Info("sending request to AWS")
+	//out := CeStub[1]
 
-	//var err error
-	//out, err := c.ce.GetCostAndUsage(context.TODO(), in.ceInput)
-	//if err != nil {
-	//	logger.Errorf("Cannot get CostAndUsage metrics", err)
-	//	// Insert 5 sec delay before retry
-	//	c.insertDelay(i, time.Now().Add(5*time.Second).Unix())
-	//}
-	//if out == nil {
-	//	logger.Error("CostAndUsage metrics are empty")
-	//	continue
-	//}
+	logger.Info("making a call to AWS")
+	out, err := c.ce.GetCostAndUsage(context.TODO(), in.ceInput)
+	if err != nil {
+		logger.Errorf("Cannot get CostAndUsage metrics", err)
+		// Insert 10 sec delay before retry
+		readyTs := time.Now().Add(10 * time.Second).Unix()
+		c.enqueuWithTs(in, readyTs)
+	}
+
+	if out == nil {
+		// TODO: Should we exit here instead?
+		logger.Error("CostAndUsage metrics are empty")
+		readyTs := time.Now().Add(10 * time.Second).Unix()
+		c.enqueuWithTs(in, readyTs)
+		return
+	}
+
 	c.mu.Lock()
 	results = append(results, *out)
 	c.mu.Unlock()
-	//if out.NextPageToken != nil {
-	//	in.ceInput.NextPageToken = out.NextPageToken
-	//	out, err = c.ce.GetCostAndUsage(context.TODO(), in.ceInput)
-	//	if err != nil {
-	//		logger.Errorf("Cannot get CostAndUsage metrics", err)
-	//		// Insert 5 sec delay before retry
-	//		c.insertDelay(i, time.Now().Add(5*time.Second).Unix())
-	//	}
-	//	c.mu.Lock()
-	//	results = append(results, out)
-	//	c.mu.Unlock()
-	//}
+
+	if out.NextPageToken != nil {
+		in.ceInput.NextPageToken = out.NextPageToken
+		out, err = c.ce.GetCostAndUsage(context.TODO(), in.ceInput)
+		if err != nil {
+			logger.Errorf("Cannot get CostAndUsage metrics", err)
+			// Insert 10 sec delay before retry
+			readyTs := time.Now().Add(10 * time.Second).Unix()
+			c.enqueuWithTs(in, readyTs)
+		}
+		c.mu.Lock()
+		results = append(results, *out)
+		c.mu.Unlock()
+	}
 	// There is no need to delay for the whole month
-	delayTs := time.Now().Add(24 * time.Hour).Unix()
+	readyTs := time.Now().Add(24 * time.Hour).Unix()
 	// If we need hourly metrics, we need to fetch them every hour
 	if strings.EqualFold(string(in.ceInput.Granularity), "hourly") {
-		delayTs = time.Now().Add(1 * time.Hour).Unix()
+		readyTs = time.Now().Add(1 * time.Hour).Unix()
 	}
-	in.delayTs = delayTs
-	err = c.inputs.Enqueue(in)
-	if err != nil {
-		logger.Error(err)
-	}
-	cache.Store("aws", results)
+	c.enqueuWithTs(in, readyTs)
+	key := getMetricCacheKey(in.ceInput)
+	c.cache.Swap(key, results)
 }
 
-func (c *Client) getCostAndUsageMetric(metric config.MetricsConfig, pageToken *string) (*costexplorer.GetCostAndUsageOutput, error) {
-	input, err := buildCostAndUsageInput(metric, pageToken)
-	if err != nil {
-		return nil, err
+func (c *Client) enqueuWithTs(in input, ts int64) {
+	in.readyTs = ts
+	if err := c.inputs.Enqueue(in); err != nil {
+		logger.Error(err)
 	}
+}
 
-	out, err := c.ce.GetCostAndUsage(context.TODO(), input)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+func getMetricCacheKey(ceInput *costexplorer.GetCostAndUsageInput) string {
+	// Calculate a hash of the input
+	suffix := md5.Sum([]byte(fmt.Sprintf("%v", ceInput)))
+	return fmt.Sprintf("%s_%s", awsMetricsCachePrefix, suffix)
 }
 
 // Build the input separately, since filters cannot be empty when making a query
@@ -189,4 +183,19 @@ func buildCostAndUsageInput(metric config.MetricsConfig, pageToken *string) (*co
 		Filter:        &metric.Filter,
 		NextPageToken: pageToken,
 	}, nil
+}
+
+func generateInitialInputs(metrics []config.MetricsConfig) *goconcurrentqueue.FixedFIFO {
+	inputs := goconcurrentqueue.NewFixedFIFO(len(metrics))
+	for _, metric := range metrics {
+		el, err := buildCostAndUsageInput(metric, nil)
+		if err != nil {
+			logger.Errorf("Cannot build AWS CostAndUsageInput", err)
+		}
+		inp := input{ceInput: el, readyTs: time.Now().Unix()}
+		if err := inputs.Enqueue(inp); err != nil {
+			logger.Error(err)
+		}
+	}
+	return inputs
 }
