@@ -20,7 +20,7 @@ const (
 )
 
 type httpOut struct {
-	config config.OutputsConfig
+	config *config.OutputsConfig
 	server *http.Server
 	mux    *http.ServeMux
 	cache  *sync.Map
@@ -31,7 +31,7 @@ type result struct {
 	expire int64
 }
 
-func New(config config.OutputsConfig, cache *sync.Map) *httpOut {
+func New(config *config.OutputsConfig, cache *sync.Map) *httpOut {
 	port := 3333
 	mux := http.NewServeMux()
 	server := &http.Server{

@@ -137,7 +137,7 @@ func getMetricCacheKey(ceInput *costexplorer.GetCostAndUsageInput) string {
 
 // Build the input separately, since filters cannot be empty when making a query
 // But they can be empty in the config
-func buildCostAndUsageInput(metric config.MetricsConfig, pageToken *string) (*costexplorer.GetCostAndUsageInput, error) {
+func buildCostAndUsageInput(metric *config.MetricsConfig, pageToken *string) (*costexplorer.GetCostAndUsageInput, error) {
 	nowUtc := time.Now().UTC()
 	var endDate string
 	var startDate string
@@ -145,7 +145,7 @@ func buildCostAndUsageInput(metric config.MetricsConfig, pageToken *string) (*co
 	// AWS requires different time formats depending on granularity
 	switch strings.ToLower(metric.Granularity) {
 	case "monthly":
-		interval, _ := time.ParseDuration("731h") // 1 month
+		interval, _ := time.ParseDuration("730h") // 1 month
 		endDate = nowUtc.Format("2006-01-02")
 		startDate = nowUtc.Add(-interval).Format("2006-01-02")
 	case "daily":
@@ -185,7 +185,7 @@ func buildCostAndUsageInput(metric config.MetricsConfig, pageToken *string) (*co
 	}, nil
 }
 
-func generateInitialInputs(metrics []config.MetricsConfig) *goconcurrentqueue.FixedFIFO {
+func generateInitialInputs(metrics []*config.MetricsConfig) *goconcurrentqueue.FixedFIFO {
 	inputs := goconcurrentqueue.NewFixedFIFO(len(metrics))
 	for _, metric := range metrics {
 		el, err := buildCostAndUsageInput(metric, nil)

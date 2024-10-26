@@ -4,22 +4,28 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer/types"
 )
 
+// Config stores configuration required to run.
+// This is a direct representation of  the config file.
 type Config struct {
-	AWS     *AWSConfig      `mapstructure:"aws"`
-	Outputs []OutputsConfig `mapstructure:"outputs"`
+	AWS     *AWSConfig       `mapstructure:"aws"`
+	Outputs []*OutputsConfig `mapstructure:"outputs"`
 }
 
-// TODO: Calculate metrics names based on metrics themselves
+// AWSConfig stores information related to AWS:
+//   - Auth information
+//   - A list of Cost Explorer metrics (see `example.config.yaml` for an example)
+type AWSConfig struct {
+	Metrics []*MetricsConfig `mapstructure:"metrics"`
+}
+
+// MetricsConfig maps to the `costexplorer.GetCostAndUsageInput` type.
+// For more information about each field, see:
+// https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/costexplorer#GetCostAndUsageInput
 type MetricsConfig struct {
-	Name        string                  `mapstructure:"name"`
 	Granularity string                  `mapstructure:"granularity"`
 	Metrics     []string                `mapstructure:"metrics"`
 	GroupBy     []types.GroupDefinition `mapstructure:"group_by"`
 	Filter      types.Expression        `mapstructure:"filter"`
-}
-
-type AWSConfig struct {
-	Metrics []MetricsConfig `mapstructure:"metrics"`
 }
 
 // Enum values for output types

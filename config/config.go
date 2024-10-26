@@ -56,16 +56,20 @@ func New(configPath string) (*Config, error) {
 
 // Move these validations as well as types to the AWS package
 func validate(config *Config) error {
+	if config.AWS == nil {
+		return fmt.Errorf("AWS config is empty")
+	}
+
 	if err := validateEmptyMetrics(config); err != nil {
 		return err
 	}
 	for _, metric := range config.AWS.Metrics {
 		// Validate metric type
-		if err := validateMetricType(&metric); err != nil {
+		if err := validateMetricType(metric); err != nil {
 			return err
 		}
 		// Validate granularity
-		if err := validateGranularity(&metric); err != nil {
+		if err := validateGranularity(metric); err != nil {
 			return err
 		}
 	}
@@ -100,7 +104,7 @@ func validateMetricType(metric *MetricsConfig) error {
 func validateGranularity(metric *MetricsConfig) error {
 	gran := strings.ToLower(metric.Granularity)
 	if !validMetricGranularity[gran] {
-		return fmt.Errorf("%s unsdupported granularity. Supported types: MONTHLY, DAILY, HOURLY. Got: %s", vfp, gran)
+		return fmt.Errorf("%s unsupported granularity. Supported types: MONTHLY, DAILY, HOURLY. Got: %s", vfp, gran)
 	}
 	return nil
 }
