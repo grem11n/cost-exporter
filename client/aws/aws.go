@@ -167,6 +167,25 @@ func getMetricCacheKey(ceInput *costexplorer.GetCostAndUsageInput) string {
 	return fmt.Sprintf("%s_%s", awsMetricsCachePrefix, suffix)
 }
 
+func generateInitialInputs(metrics []*config.MetricsConfig) *goconcurrentqueue.FixedFIFO {
+	inputs := goconcurrentqueue.NewFixedFIFO(len(metrics))
+	for _, metric := range metrics {
+		el, err := buildCostAndUsageInput(metric, nil)
+		if err != nil {
+			logger.Errorf("Cannot build AWS CostAndUsageInput", err)
+		}
+		inp := input{
+			ceInput:    el,
+			readyTs:    time.Now().Unix(),
+			retryCount: 0,
+		}
+		if err := inputs.Enqueue(inp); err != nil {
+			logger.Error(err)
+		}
+	}
+	return inputs
+}
+
 // Build the input separately, since filters cannot be empty when making a query
 // But they can be empty in the config
 func buildCostAndUsageInput(metric *config.MetricsConfig, pageToken *string) (*costexplorer.GetCostAndUsageInput, error) {
@@ -215,23 +234,4 @@ func buildCostAndUsageInput(metric *config.MetricsConfig, pageToken *string) (*c
 		Filter:        &metric.Filter,
 		NextPageToken: pageToken,
 	}, nil
-}
-
-func generateInitialInputs(metrics []*config.MetricsConfig) *goconcurrentqueue.FixedFIFO {
-	inputs := goconcurrentqueue.NewFixedFIFO(len(metrics))
-	for _, metric := range metrics {
-		el, err := buildCostAndUsageInput(metric, nil)
-		if err != nil {
-			logger.Errorf("Cannot build AWS CostAndUsageInput", err)
-		}
-		inp := input{
-			ceInput:    el,
-			readyTs:    time.Now().Unix(),
-			retryCount: 0,
-		}
-		if err := inputs.Enqueue(inp); err != nil {
-			logger.Error(err)
-		}
-	}
-	return inputs
 }
