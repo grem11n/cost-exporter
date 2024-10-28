@@ -1,0 +1,5 @@
+FROM goreleaser/goreleaser:latest AS goreleaser
+FROM golang:1.23-alpine
+COPY --from=goreleaser /usr/bin/goreleaser /usr/bin/goreleaser
+RUN apk add --no-cache git make bash && \
+    go install github.com/kyoh86/richgo@latest
