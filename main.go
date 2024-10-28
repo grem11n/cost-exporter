@@ -26,7 +26,7 @@ func main() {
 	}
 	awsClient, err := aws.New(conf.AWS, &cache)
 	if err != nil {
-		logger.Errorf("Unable to create AWS client: %w", err)
+		logger.Fatalf("Unable to create AWS client: %w", err)
 	}
 
 	// Get initial metrics

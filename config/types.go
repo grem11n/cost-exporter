@@ -15,7 +15,8 @@ type Config struct {
 //   - Auth information
 //   - A list of Cost Explorer metrics (see `example.config.yaml` for an example)
 type AWSConfig struct {
-	Metrics []*MetricsConfig `mapstructure:"metrics"`
+	AssumeRole string           `mapstructure:"role"`
+	Metrics    []*MetricsConfig `mapstructure:"metrics"`
 }
 
 // MetricsConfig maps to the `costexplorer.GetCostAndUsageInput` type.

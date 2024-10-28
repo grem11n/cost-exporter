@@ -11,8 +11,11 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer"
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/grem11n/aws-cost-meter/config"
 	"github.com/grem11n/aws-cost-meter/logger"
@@ -21,6 +24,7 @@ import (
 const (
 	defaultPollInterval   = 1         // hour, because this is the minimum time granularity
 	awsMetricsCachePrefix = "raw_aws" // this is important that prefix starts with raw_
+	maxRetryCount         = 3         // maximum number of allowed retries to get AWS metrics before giving up
 )
 
 type Client struct {
@@ -32,8 +36,9 @@ type Client struct {
 }
 
 type input struct {
-	ceInput *costexplorer.GetCostAndUsageInput
-	readyTs int64
+	ceInput    *costexplorer.GetCostAndUsageInput
+	readyTs    int64
+	retryCount int
 }
 
 func New(config *config.AWSConfig, cache *sync.Map) (*Client, error) {
@@ -43,6 +48,25 @@ func New(config *config.AWSConfig, cache *sync.Map) (*Client, error) {
 	if err != nil {
 		logger.Errorf("unable to load AWS config: %w", err)
 		return nil, err
+	}
+
+	// Assume a specific role if provided
+	if config.AssumeRole != "" {
+		stsClient := sts.NewFromConfig(cfg)
+		provider := stscreds.NewAssumeRoleProvider(stsClient, config.AssumeRole)
+		cfg.Credentials = aws.NewCredentialsCache(provider)
+		creds, err := cfg.Credentials.Retrieve(context.Background())
+		if err != nil {
+			logger.Errorf("unable to retrieve AWS credentials with AssumeRole: %w", err)
+		}
+		cfg.Credentials = credentials.StaticCredentialsProvider{
+			Value: aws.Credentials{
+				AccessKeyID:     creds.AccessKeyID,
+				SecretAccessKey: creds.SecretAccessKey,
+				SessionToken:    creds.SessionToken,
+				Source:          "assumerole",
+			},
+		}
 	}
 	inputs := generateInitialInputs(config.Metrics)
 	return &Client{
@@ -66,31 +90,36 @@ func (c *Client) GetCostAndUsageMatrics() {
 	in := obj.(input) // this type cast should be safe, since we control inputs
 	if err != nil {
 		logger.Error(err)
+		return
+	}
+	if in.retryCount > maxRetryCount {
+		// TODO: Think about how to propagate this error further
+		logger.Fatalf("Cannot get CostAndUsage metrics", err)
 	}
 	// Check if the metrics are up for refresh
 	if in.readyTs > time.Now().Unix() {
 		// Put the input back in the queue
-		c.enqueuWithTs(in, in.readyTs)
+		c.enqueuWithTs(in, in.readyTs, in.retryCount)
 		return
 	}
-	// TODO: Debug to not contact AWS
-	//logger.Info("sending request to AWS")
-	//out := CeStub[1]
 
 	logger.Info("making a call to AWS")
 	out, err := c.ce.GetCostAndUsage(context.TODO(), in.ceInput)
 	if err != nil {
-		logger.Errorf("Cannot get CostAndUsage metrics", err)
+		logger.Errorf("Cannot get CostAndUsage metrics", err, in.retryCount)
 		// Insert 10 sec delay before retry
 		readyTs := time.Now().Add(10 * time.Second).Unix()
-		c.enqueuWithTs(in, readyTs)
+		retry := in.retryCount + 1
+		c.enqueuWithTs(in, readyTs, retry)
+		return
 	}
 
 	if out == nil {
 		// TODO: Should we exit here instead?
 		logger.Error("CostAndUsage metrics are empty")
 		readyTs := time.Now().Add(10 * time.Second).Unix()
-		c.enqueuWithTs(in, readyTs)
+		retry := in.retryCount + 1
+		c.enqueuWithTs(in, readyTs, retry)
 		return
 	}
 
@@ -105,7 +134,9 @@ func (c *Client) GetCostAndUsageMatrics() {
 			logger.Errorf("Cannot get CostAndUsage metrics", err)
 			// Insert 10 sec delay before retry
 			readyTs := time.Now().Add(10 * time.Second).Unix()
-			c.enqueuWithTs(in, readyTs)
+			retry := in.retryCount + 1
+			c.enqueuWithTs(in, readyTs, retry)
+			return
 		}
 		c.mu.Lock()
 		results = append(results, *out)
@@ -117,13 +148,14 @@ func (c *Client) GetCostAndUsageMatrics() {
 	if strings.EqualFold(string(in.ceInput.Granularity), "hourly") {
 		readyTs = time.Now().Add(1 * time.Hour).Unix()
 	}
-	c.enqueuWithTs(in, readyTs)
+	c.enqueuWithTs(in, readyTs, 0)
 	key := getMetricCacheKey(in.ceInput)
 	c.cache.Swap(key, results)
 }
 
-func (c *Client) enqueuWithTs(in input, ts int64) {
+func (c *Client) enqueuWithTs(in input, ts int64, retries int) {
 	in.readyTs = ts
+	in.retryCount = retries
 	if err := c.inputs.Enqueue(in); err != nil {
 		logger.Error(err)
 	}
@@ -192,7 +224,11 @@ func generateInitialInputs(metrics []*config.MetricsConfig) *goconcurrentqueue.F
 		if err != nil {
 			logger.Errorf("Cannot build AWS CostAndUsageInput", err)
 		}
-		inp := input{ceInput: el, readyTs: time.Now().Unix()}
+		inp := input{
+			ceInput:    el,
+			readyTs:    time.Now().Unix(),
+			retryCount: 0,
+		}
 		if err := inputs.Enqueue(inp); err != nil {
 			logger.Error(err)
 		}
