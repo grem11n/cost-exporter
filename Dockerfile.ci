@@ -1,5 +1,9 @@
-FROM goreleaser/goreleaser:latest AS goreleaser
-FROM golang:1.23-alpine
+ARG goreleaserImage=v2.3.2
+ARG golangImage=1.23-alpine
+FROM goreleaser/goreleaser:${goreleaserImage} AS goreleaser
+FROM golang:${golangImage}
 COPY --from=goreleaser /usr/bin/goreleaser /usr/bin/goreleaser
-RUN apk add --no-cache git make bash && \
-    go install github.com/kyoh86/richgo@latest
+RUN apk add --no-cache git make bash \
+    && go install github.com/kyoh86/richgo@latest \
+    # Syft is required to generate SBOMs
+    && curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
