@@ -55,3 +55,12 @@ type PrometheusConfig struct {
 	Host string `mapstructure:"host"`
 	Port int64  `mapstructure:"port"`
 }
+
+// ProbesConfig contains informtation required for Kubernetes probes
+type ProbeConfig struct {
+	Port                   int
+	LivenssProbeEndpoint   string
+	ReadinessProbeEndpoint string
+	StartupProbeEndpoint   string
+	KeysToCheck            []string
+}

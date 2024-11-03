@@ -10,6 +10,7 @@ import (
 	"github.com/grem11n/aws-cost-meter/config"
 	"github.com/grem11n/aws-cost-meter/logger"
 	httpOut "github.com/grem11n/aws-cost-meter/outputs/http"
+	"github.com/grem11n/aws-cost-meter/probes"
 	flag "github.com/spf13/pflag"
 )
 
@@ -28,6 +29,13 @@ func main() {
 	if err != nil {
 		logger.Fatalf("Unable to create AWS client: %w", err)
 	}
+
+	// Initialize Kubernetes probes
+	probeConf := &config.ProbeConfig{
+		Port: 8999,
+	}
+	prober := probes.New(probeConf, &cache)
+	go prober.Probe()
 
 	// Get initial metrics
 	awsClient.GetCostAndUsageMatrics()
