@@ -1,0 +1,68 @@
+---
+# clients contains information required to initialize
+# the cloud clients
+# Currently, only AWS is supported
+#
+# Example configuration:
+#
+# clients:
+#   aws:
+#     # A role to assume if cross-account access is required
+#     role: CrossAccountRole
+#     # Metrics input in the maps to the `costexplorer.GetCostAndUsageInput` type.
+#     For more information about each field, see:
+#     https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/costexplorer#GetCostAndUsageInput
+#     metrics:
+#     - name: daily_cost
+#       granularity: daily
+#       metrics:
+#       - "NetAmortizedCost"
+#       - "NetUnblendedCost"
+#       group_by:
+#       - type: DIMENSION
+#         key: SERVICE
+#       filter:
+#         dimensions:
+#           key: SERVICE
+#           values: ["CloudWatch", "EC2 - Other", "DynamoDB"]
+#     - granularity: daily
+#       metrics:
+#       - "NetAmortizedCost"
+#       - "NetUnblendedCost"
+#       group_by:
+#       - type: DIMENSION
+#         key: SERVICE
+#       filter:
+#         dimensions:
+#           key: SERVICE
+#           values: ["AWS Cost Explorer"]
+#     - granularity: "monthly"
+#       metrics:
+#         - "NetAmortizedCost"
+#         - "NetUnblendedCost"
+#       group_by:
+#         - type: DIMENSION
+#           key: SERVICE
+clients:
+  aws:
+    metrics:
+    - granularity: "monthly"
+      metrics:
+        - "NetAmortizedCost"
+        - "NetUnblendedCost"
+      group_by:
+        - type: DIMENSION
+          key: SERVICE
+
+# Specify the metrics format to output
+# Currently, only prometheus format is supported
+# So, this setting is ignored
+metrics_format: "prometheus"
+
+# Set outputs for the metrics
+# Currently, only the HTTP output is supported
+# You can change the port, and the path on which metrics are present
+outputs:
+  http:
+    port: 8080
+    path: "/metrics"

@@ -2,6 +2,7 @@ package logger
 
 import (
 	"log"
+	"os"
 	"time"
 
 	"go.uber.org/zap"
@@ -26,9 +27,20 @@ func init() {
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 
+	// Get the log level from env
+	log_level := os.Getenv("LOG_LEVEL")
+	if log_level == "" {
+		// Set default
+		log_level = "INFO"
+	}
+	zap_level, err := zap.ParseAtomicLevel(log_level)
+	if err != nil {
+		log.Fatalf("Wrong log level set: %s", err)
+	}
+
 	// set up the logger
 	config := zap.Config{
-		Level:            zap.NewAtomicLevelAt(zap.InfoLevel),
+		Level:            zap_level,
 		Development:      false,
 		Encoding:         "json",
 		EncoderConfig:    encoderConfig,
@@ -43,6 +55,7 @@ func init() {
 	}
 	defer logger.Sync()
 	sugar = logger.Sugar()
+	sugar.Info("Initiated logger. Log level: ", log_level)
 }
 
 func Info(args ...interface{}) {
@@ -69,10 +82,18 @@ func Errorf(message string, args ...interface{}) {
 	sugar.Errorf(message, args)
 }
 
+func Fatal(args ...interface{}) {
+	sugar.Fatal(args)
+}
+
 func Fatalf(message string, args ...interface{}) {
 	sugar.Fatalf(message, args)
 }
 
 func Debug(args ...interface{}) {
 	sugar.Debug(args)
+}
+
+func Debugf(message string, args ...interface{}) {
+	sugar.Debugf(message, args)
 }

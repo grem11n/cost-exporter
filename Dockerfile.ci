@@ -1,5 +1,5 @@
 ARG goreleaserImage=v2.3.2
-ARG golangImage=1.23-alpine
+ARG golangImage=1.23.8-alpine
 FROM goreleaser/goreleaser:${goreleaserImage} AS goreleaser
 FROM golang:${golangImage}
 COPY --from=goreleaser /usr/bin/goreleaser /usr/bin/goreleaser

@@ -1,4 +1,4 @@
-package prometheus
+package converters
 
 import (
 	"bytes"
@@ -11,22 +11,43 @@ import (
 
 	"github.com/VictoriaMetrics/metrics"
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer"
-	"github.com/grem11n/aws-cost-meter/logger"
-	"github.com/iancoleman/strcase"
+	"github.com/ettle/strcase"
+	"github.com/grem11n/cost-exporter/logger"
 )
 
-// TODO: Move to config
+type PrometheusAWS struct{}
+
 const (
-	awsCachePrefix          = "aws"
-	awsCacheProcessedPrefix = "aws_prometheus"
-	defaultMetricPrefix     = "ce_exporter"
-	defaultCacheTTL         = 1 * time.Hour // the minimal granulatiry of AWS cost metrics
+	awsCachePrefix      = "aws_"
+	namespace           = "prometheus-aws"
+	defaultMetricPrefix = "ce_exporter"
+	// We do not need to convert metrics too frequently,
+	// since they are propagated hourly
+	cooldown = 30 // minutes
 )
 
-func ConvertAWSMetrics(cache *sync.Map) bytes.Buffer {
+func init() {
+	logger.Info("Initializing PrometheusAWS converter")
+	Register(namespace, func() Conveter { return &PrometheusAWS{} })
+}
+
+func (p *PrometheusAWS) Convert(cache *sync.Map) {
+	logger.Info("Converting AWS metrics to the Prometheus format")
+	for {
+		if ok := p.convertAWSMetrics(cache); ok {
+			time.Sleep(cooldown * time.Minute)
+		}
+	}
+}
+
+// Retry if there are no metrics yet
+func (p *PrometheusAWS) convertAWSMetricsWithRetry(cache *sync.Map) {
+}
+
+func (p *PrometheusAWS) convertAWSMetrics(cache *sync.Map) bool {
 	var awsMetrics []costexplorer.GetCostAndUsageOutput
 	cache.Range(func(key, value any) bool {
-		if strings.HasPrefix(key.(string), "raw_aws") { // hardcode
+		if strings.HasPrefix(key.(string), awsCachePrefix) {
 			res, ok := value.([]costexplorer.GetCostAndUsageOutput)
 			if !ok {
 				logger.Warn("cache doesn't have %s metrics", awsCachePrefix)
@@ -36,9 +57,15 @@ func ConvertAWSMetrics(cache *sync.Map) bytes.Buffer {
 		return true
 	})
 
-	metricNameMap, err := discoverAWSMetrics(awsMetrics)
+	// Handle the case if there are no metrics yet
+	if len(awsMetrics) == 0 {
+		return false
+	}
+
+	metricNameMap, err := p.discoverAWSMetrics(awsMetrics)
 	if err != nil {
 		logger.Error(err)
+		return false
 	}
 
 	vm := metrics.NewSet()
@@ -52,18 +79,21 @@ func ConvertAWSMetrics(cache *sync.Map) bytes.Buffer {
 	}
 	var res bytes.Buffer
 	vm.WritePrometheus(&res)
-	return res
+	logger.Debug("Writing Prometheus metrics to cache with key: ", namespace)
+	cache.Swap(namespace, res)
+	logger.Debug("Prometheus metrics: ", res.String())
+	return true
 }
 
 // Analyze the raw metrics structure to discover, which metrics are present
-func discoverAWSMetrics(metrics []costexplorer.GetCostAndUsageOutput) (map[string]map[string]float64, error) {
+func (p *PrometheusAWS) discoverAWSMetrics(metrics []costexplorer.GetCostAndUsageOutput) (map[string]map[string]float64, error) {
 	// Using maps to convert the raw format and deduplicate metrics "in flight"
 	var metricNameMap = make(map[string]map[string]float64)
 
 	for _, metrics := range metrics {
 		// There is only a single element in the .ResultsByTime, because of how we craft the time period in the initial request
 		if len(metrics.ResultsByTime) == 0 {
-			return nil, errors.New("No metrics were found!")
+			return nil, errors.New("no metrics were found")
 		}
 		for _, group := range metrics.ResultsByTime[0].Groups {
 			for costType := range group.Metrics {

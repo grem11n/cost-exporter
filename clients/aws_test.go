@@ -1,4 +1,4 @@
-package aws
+package clients
 
 import (
 	"time"
@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer"
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer/types"
-	"github.com/grem11n/aws-cost-meter/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,7 +24,7 @@ var (
 		},
 		NextPageToken: nil,
 	}
-	testMetric = config.MetricsConfig{
+	testMetric = MetricsConfig{
 		Granularity: "daily",
 		Metrics:     []string{"UnblendedCost"},
 		GroupBy: []types.GroupDefinition{
@@ -81,7 +80,7 @@ func TestBuildCostAndUsageInputFilter(t *testing.T) {
 }
 
 func TestGenerateInitialInputs(t *testing.T) {
-	metrics := []*config.MetricsConfig{&testMetric}
+	metrics := []*MetricsConfig{&testMetric}
 	inputs := generateInitialInputs(metrics)
 	assert.Equal(t, 1, inputs.GetCap())
 	assert.Equal(t, 1, inputs.GetLen())

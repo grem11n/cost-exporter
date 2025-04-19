@@ -8,7 +8,7 @@ help:
 
 check_deps: ## Check if dependencies installed
 	@for dep in "richgo" "docker" ; do \
-		which $$dep &>/dev/null  || echo "$$dep is not installed"; \
+		which $$dep &>/dev/null && echo "$$dep is installed"  || echo "$$dep is not installed"; \
 	done
 
 install_deps: ## Install test dependencies

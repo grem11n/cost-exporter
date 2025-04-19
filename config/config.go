@@ -1,34 +1,26 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"strings"
 
+	"github.com/grem11n/cost-exporter/clients"
+	"github.com/grem11n/cost-exporter/outputs"
+	"github.com/grem11n/cost-exporter/probes"
 	"github.com/spf13/viper"
 )
 
-// By default use ./config.yaml file
 const (
 	defaultConfigPath = "./config.yaml"
-	// prefix for validation failed error messages
-	vfp = "config validation failed:"
 )
 
-var (
-	validAWSMetrics = map[string]bool{
-		"UnblendedCost":    true,
-		"BlendedCost":      true,
-		"NetUnblendedCost": true,
-		"NetAmortizedCost": true,
-		"UsageQuantity":    true,
-	}
-	validMetricGranularity = map[string]bool{
-		"daily":   true,
-		"monthly": true,
-		"hourly":  true,
-	}
-)
+type Config struct {
+	Clients       map[string]clients.ClientConfig `mapstructure:"clients"`
+	MetricsFormat string                          `mapstructure:"metrics_format,omitempty"`
+	Outputs       map[string]outputs.OutputConfig `mapstructure:"outputs"`
+	Probes        probes.ProbeConfig              `mapstructure:"kubernetes_probes,omitempty"`
+}
 
 func New(configPath string) (*Config, error) {
 	if configPath == "" {
@@ -47,64 +39,21 @@ func New(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("Unable to read the config file %s: %w", configPath, err)
 	}
 
-	if err := validate(&config); err != nil {
-		return nil, fmt.Errorf("Unable to read the config file %s: %w", configPath, err)
+	if err := config.populateDefaults(); err != nil {
+		return nil, err
 	}
 
 	return &config, nil
 }
 
-// Move these validations as well as types to the AWS package
-func validate(config *Config) error {
-	if config.AWS == nil {
-		return fmt.Errorf("AWS config is empty")
+func (c *Config) populateDefaults() error {
+	if c.Clients == nil {
+		return errors.New("client configuration is required. Only AWS is supported")
 	}
 
-	if err := validateEmptyMetrics(config); err != nil {
-		return err
-	}
-	for _, metric := range config.AWS.Metrics {
-		// Validate metric type
-		if err := validateMetricType(metric); err != nil {
-			return err
-		}
-		// Validate granularity
-		if err := validateGranularity(metric); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func validateEmptyMetrics(config *Config) error {
-	if len(config.AWS.Metrics) == 0 {
-		return fmt.Errorf("No metrics found in config")
-	}
-	return nil
-}
-
-func validateMetricType(metric *MetricsConfig) error {
-	for _, mtype := range metric.Metrics {
-		if _, ok := validAWSMetrics[mtype]; !ok {
-			supportedMetrics := []string{}
-			for k := range validAWSMetrics {
-				supportedMetrics = append(supportedMetrics, k)
-			}
-			supportedMetricsStr := strings.Join(supportedMetrics, ", ")
-			return fmt.Errorf("%s unsupported metric type. Supported metrics are: %s. Got: %s",
-				vfp,
-				supportedMetricsStr,
-				mtype,
-			)
-		}
-	}
-	return nil
-}
-
-func validateGranularity(metric *MetricsConfig) error {
-	gran := strings.ToLower(metric.Granularity)
-	if !validMetricGranularity[gran] {
-		return fmt.Errorf("%s unsupported granularity. Supported types: MONTHLY, DAILY, HOURLY. Got: %s", vfp, gran)
+	if c.Outputs == nil {
+		c.Outputs = make(map[string]outputs.OutputConfig)
+		c.Outputs["http"] = outputs.Http{}
 	}
 	return nil
 }

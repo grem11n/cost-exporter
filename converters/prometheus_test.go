@@ -1,15 +1,17 @@
-package prometheus
+package converters
 
 import (
+	"bytes"
 	"sync"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer"
-	"github.com/grem11n/aws-cost-meter/client/aws"
+	"github.com/grem11n/cost-exporter/clients"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
+	testPrometheus     = PrometheusAWS{}
 	expectedMetricsMap = map[string]map[string]float64{
 		"NetAmortizedCost": {
 			"AWS Cost Explorer":             0.19,
@@ -37,21 +39,25 @@ ce_exporter_net_unblended_cost{job="ce-exporter",dimension="AmazonCloudWatch"} 0
 
 func TestDiscoverMetrics(t *testing.T) {
 	var m []costexplorer.GetCostAndUsageOutput
-	for _, c := range aws.CeStub {
+	for _, c := range clients.CeStub {
 		m = append(m, *c)
 	}
-	got, err := discoverAWSMetrics(m)
+	got, err := testPrometheus.discoverAWSMetrics(m)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedMetricsMap, got)
 }
 
 func TestConvertAWSMetricsPositive(t *testing.T) {
 	var m []costexplorer.GetCostAndUsageOutput
-	for _, c := range aws.CeStub {
+	for _, c := range clients.CeStub {
 		m = append(m, *c)
 	}
 	var mp sync.Map
-	mp.Store("raw_aws_0000000", m)
-	got := ConvertAWSMetrics(&mp)
-	assert.Equal(t, expectedPrometheusMetrics, got.String())
+	mp.Store("aws_0", m)
+	testPrometheus.convertAWSMetrics(&mp)
+	got, ok := mp.Load(namespace)
+	assert.True(t, ok, "Cannot load test results from cache")
+	gotb, ok := got.(bytes.Buffer)
+	assert.True(t, ok, "Cannot load test results from cache")
+	assert.Equal(t, expectedPrometheusMetrics, gotb.String())
 }
