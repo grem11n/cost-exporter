@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/VictoriaMetrics/metrics"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -16,14 +17,23 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/enriquebris/goconcurrentqueue"
+	intmetrics "github.com/grem11n/cost-exporter/internal/metrics"
 	"github.com/grem11n/cost-exporter/logger"
 	"github.com/mitchellh/mapstructure"
 )
 
 const (
-	awsMetricsCachePrefix = "raw_aws" // this is important that prefix starts with raw_
-	maxRetryCount         = 3         // maximum number of allowed retries to get AWS metrics before giving up
-	keyPrefix             = "aws"
+	maxRetryCount          = 3 // maximum number of allowed retries to get AWS metrics before giving up
+	keyPrefix              = "aws"
+	awsCallsSuccessName    = "aws_calls_total{result=\"success\"}"
+	awsCallsFailureName    = "aws_calls_total{result=\"failure\"}"
+	getMetricsDurationName = "aws_get_metrics_duration"
+)
+
+var (
+	awsCallsSuccess    *metrics.Counter
+	awsCallsFailure    *metrics.Counter
+	getMetricsDuration *metrics.Histogram
 )
 
 type AWS struct {
@@ -60,7 +70,9 @@ func init() {
 	logger.Info("Initializing AWS client")
 	Register("aws", func(conf ClientConfig) Client {
 		var cfg AWSConfig
-		mapstructure.Decode(conf, &cfg)
+		if err := mapstructure.Decode(conf, &cfg); err != nil {
+			logger.Fatalf("unable to decode AWS config: %w", err)
+		}
 		logger.Debug("AWS config: ", cfg)
 		ceCfg, err := config.LoadDefaultConfig(context.TODO(),
 			config.WithRegion("us-east-1"), // Const Explorer is global, hence us-east-1
@@ -93,6 +105,11 @@ func init() {
 			mu:     sync.Mutex{},
 		}
 	})
+	// Maybe initiate all the metrics in a loop if there are too many
+	logger.Info("Initializing AWS Client metrics")
+	awsCallsSuccess = intmetrics.InternalMetricsSet.GetOrCreateCounter(awsCallsSuccessName)
+	awsCallsFailure = intmetrics.InternalMetricsSet.GetOrCreateCounter(awsCallsFailureName)
+	getMetricsDuration = intmetrics.InternalMetricsSet.GetOrCreateHistogram(getMetricsDurationName)
 }
 
 func (a *AWS) GetMetrics(cache *sync.Map) {
@@ -102,6 +119,7 @@ func (a *AWS) GetMetrics(cache *sync.Map) {
 }
 
 func (a *AWS) getCostAndUsageMetrics(cache *sync.Map) {
+	startTs := time.Now()
 	var results []costexplorer.GetCostAndUsageOutput
 	obj, err := a.inputs.DequeueOrWaitForNextElement()
 	in := obj.(input) // this type cast should be safe, since we control inputs
@@ -148,12 +166,14 @@ func (a *AWS) getCostAndUsageMetrics(cache *sync.Map) {
 	logger.Debugf("Adding AWS metrics to the cache. Key: %s", key)
 	cache.Swap(key, results)
 	logger.Debug("Metrics: ", results)
+	getMetricsDuration.UpdateDuration(startTs)
 }
 
 func (a *AWS) costAndUsageCall(in input) *costexplorer.GetCostAndUsageOutput {
 	out, err := a.ce.GetCostAndUsage(context.TODO(), in.ceInput)
 	if err != nil {
 		logger.Error("Cannot get CostAndUsage metrics", err, in.retryCount)
+		awsCallsFailure.Inc()
 		// Insert 10 sec delay before retry
 		readyTs := time.Now().Add(10 * time.Second).Unix()
 		retry := in.retryCount + 1
@@ -164,11 +184,13 @@ func (a *AWS) costAndUsageCall(in input) *costexplorer.GetCostAndUsageOutput {
 	if out == nil {
 		// TODO: Should we exit here instead?
 		logger.Error("CostAndUsage metrics are empty")
+		awsCallsFailure.Inc()
 		readyTs := time.Now().Add(10 * time.Second).Unix()
 		retry := in.retryCount + 1
 		a.enqueuWithTs(in, readyTs, retry)
 		return nil
 	}
+	awsCallsSuccess.Inc()
 	return out
 }
 

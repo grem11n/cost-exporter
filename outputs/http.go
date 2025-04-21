@@ -64,16 +64,23 @@ func (h *Http) handleMetrics(keys []string, cache *sync.Map) http.HandlerFunc {
 			if !ok {
 				logger.Error("Cannot get metrics from cache")
 				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte("500 - Cannot get metrics from cache"))
+				_, err := w.Write([]byte("500 - Cannot get metrics from cache"))
+				if err != nil {
+					logger.Error(err)
+				}
 				return
 			}
 			rb, ok := r.([]byte)
 			if !ok {
 				logger.Error("Odd metrics format")
 				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte("500 - Odd metrics format"))
+				_, err := w.Write([]byte("500 - Odd metrics format"))
+				if err != nil {
+					logger.Error(err)
+				}
 				return
 			}
+			res.WriteString(fmt.Sprintf("# Metrics from %s\r\n", key))
 			res.Write(rb)
 		}
 
@@ -81,7 +88,10 @@ func (h *Http) handleMetrics(keys []string, cache *sync.Map) http.HandlerFunc {
 		if _, err := io.WriteString(w, res.String()); err != nil {
 			logger.Error(err)
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			_, err := w.Write([]byte(err.Error()))
+			if err != nil {
+				logger.Error(err)
+			}
 		}
 	}
 }

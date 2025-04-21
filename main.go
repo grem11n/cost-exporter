@@ -7,6 +7,7 @@ import (
 	"github.com/grem11n/cost-exporter/clients"
 	"github.com/grem11n/cost-exporter/config"
 	"github.com/grem11n/cost-exporter/converters"
+	intmetrics "github.com/grem11n/cost-exporter/internal/metrics"
 	"github.com/grem11n/cost-exporter/logger"
 	"github.com/grem11n/cost-exporter/outputs"
 	"github.com/grem11n/cost-exporter/probes"
@@ -20,6 +21,10 @@ type App struct {
 	Converters    map[string]converters.Conveter
 	Outputs       map[string]outputs.Output
 }
+
+const (
+	internalMetricsKey = "prometheus-internal"
+)
 
 var (
 	configPath *string = flag.StringP("config", "c", "./config.yaml", "Path to the configuration file")
@@ -73,9 +78,13 @@ func main() {
 		app.Converters[converterName] = converter
 	}
 
+	// Convert metrics from the input to the output format
 	for _, cv := range app.Converters {
 		go cv.Convert(&cache)
 	}
+
+	// Collect the internal metrics
+	go intmetrics.Publish(internalMetricsKey, &cache)
 
 	// Get the outputs from the registry
 	for outputName, outputConfig := range conf.Outputs {
@@ -89,8 +98,9 @@ func main() {
 		app.Outputs[outputName] = output
 	}
 
+	// Append the internal metrics
+	convertedKeys = append(convertedKeys, internalMetricsKey)
 	// Output the metrics
-	fmt.Println(app.Outputs)
 	for _, out := range app.Outputs {
 		out.Publish(convertedKeys, &cache)
 	}

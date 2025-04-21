@@ -12,6 +12,7 @@ import (
 	"github.com/VictoriaMetrics/metrics"
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer"
 	"github.com/ettle/strcase"
+	intmetrics "github.com/grem11n/cost-exporter/internal/metrics"
 	"github.com/grem11n/cost-exporter/logger"
 )
 
@@ -23,12 +24,23 @@ const (
 	defaultMetricPrefix = "ce_exporter"
 	// We do not need to convert metrics too frequently,
 	// since they are propagated hourly
-	cooldown = 30 // minutes
+	cooldown               = 30 // minutes
+	costMetricsCounterName = "cost_metrics_total{converter=\"prometheus-aws\"}"
+	conversionDurationName = "prometheus_aws_convertion_duration"
+)
+
+var (
+	costMetricsCounter *metrics.Counter
+	conversionDuration *metrics.Histogram
 )
 
 func init() {
 	logger.Info("Initializing PrometheusAWS converter")
 	Register(namespace, func() Conveter { return &PrometheusAWS{} })
+	// Maybe initiate all the metrics in a loop if there are too many
+	logger.Info("Initializing PrometheusAWS converter metrics")
+	costMetricsCounter = intmetrics.InternalMetricsSet.GetOrCreateCounter(costMetricsCounterName)
+	conversionDuration = intmetrics.InternalMetricsSet.GetOrCreateHistogram(conversionDurationName)
 }
 
 func (p *PrometheusAWS) Convert(cache *sync.Map) {
@@ -40,11 +52,8 @@ func (p *PrometheusAWS) Convert(cache *sync.Map) {
 	}
 }
 
-// Retry if there are no metrics yet
-func (p *PrometheusAWS) convertAWSMetricsWithRetry(cache *sync.Map) {
-}
-
 func (p *PrometheusAWS) convertAWSMetrics(cache *sync.Map) bool {
+	startTs := time.Now()
 	var awsMetrics []costexplorer.GetCostAndUsageOutput
 	cache.Range(func(key, value any) bool {
 		if strings.HasPrefix(key.(string), awsCachePrefix) {
@@ -82,6 +91,9 @@ func (p *PrometheusAWS) convertAWSMetrics(cache *sync.Map) bool {
 	logger.Debug("Writing Prometheus metrics to cache with key: ", namespace)
 	cache.Swap(namespace, res.Bytes())
 	logger.Debug("Prometheus metrics: ", res.String())
+
+	costMetricsCounter.Set(uint64(len(vm.ListMetricNames())))
+	conversionDuration.UpdateDuration(startTs)
 	return true
 }
 
