@@ -65,14 +65,16 @@ func (h *Http) handleMetrics(keys []string, cache *sync.Map) http.HandlerFunc {
 				logger.Error("Cannot get metrics from cache")
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Write([]byte("500 - Cannot get metrics from cache"))
+				return
 			}
-			rb, ok := r.(bytes.Buffer)
+			rb, ok := r.([]byte)
 			if !ok {
 				logger.Error("Odd metrics format")
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Write([]byte("500 - Odd metrics format"))
+				return
 			}
-			res.Write(rb.Bytes())
+			res.Write(rb)
 		}
 
 		logger.Debug(res.String())

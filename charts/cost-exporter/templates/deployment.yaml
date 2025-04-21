@@ -41,6 +41,8 @@ spec:
       containers:
         - name: {{ include "cost-exporter.name" . }}
           image: "{{ .Values.image.repository}}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          command:
+            - "/cost-exporter"
           args:
             - -c
             - /app/config.yaml
@@ -49,14 +51,16 @@ spec:
             - name: LOG_LEVEL
               value: {{ .Values.logLevel | default "INFO" }}
             {{- with .Values.deployment.extraEnv }}
-            {{- toYaml . | trim | nindent 8 }}
+            {{- toYaml . | trim | nindent 12 }}
             {{- end }}
           ports:
             {{- with .Values.config }}
             {{- with .outputs }}
+            {{- with .http }}
             - name: output
               containerPort: {{ .port }}
               protocol: TCP
+            {{- end }}
             {{- end }}
             {{- end }}
             {{- with .Values.deployment.livenessProbe }}

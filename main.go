@@ -36,10 +36,10 @@ var (
 func main() {
 	flag.Parse()
 	conf, err := config.New(*configPath)
+	logger.Debug("Config: ", conf)
 	if err != nil {
 		logger.Fatalf("Unable to read the config file: ", err)
 	}
-	logger.Debugf("Config: %s", conf)
 
 	// Start the probes server
 	probes := probes.New(&conf.Probes, &cache)

@@ -80,7 +80,7 @@ func (p *PrometheusAWS) convertAWSMetrics(cache *sync.Map) bool {
 	var res bytes.Buffer
 	vm.WritePrometheus(&res)
 	logger.Debug("Writing Prometheus metrics to cache with key: ", namespace)
-	cache.Swap(namespace, res)
+	cache.Swap(namespace, res.Bytes())
 	logger.Debug("Prometheus metrics: ", res.String())
 	return true
 }
