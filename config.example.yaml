@@ -65,4 +65,5 @@ metrics_format: "prometheus"
 outputs:
   http:
     port: 8080
+    # Path must contain a starting slash
     path: "/metrics"

@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cost-exporter.fullname" . }}
+  labels:
+    {{- include "cost-exporter.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: http-output
+      port: {{ .Values.service.port | default 8080 }}
+      {{- if .Values.outputs }}
+      {{- if .Values.outputs.http }}
+      targetPort: {{ .Values.outputs.http.port | default 8080 }}
+      {{- else }}
+      targetPort: 8080
+      {{- end }}
+      {{- end }}
+      protocol: TCP
+  selector:
+    {{- include "cost-exporter.selectorLabels" . | nindent 4 }}

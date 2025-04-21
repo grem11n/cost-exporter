@@ -1,7 +1,8 @@
+{{/* vim: set filetype=mustache: */}}
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "cost-explorer.name" -}}
+{{- define "cost-exporter.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -10,7 +11,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "cost-explorer.fullname" -}}
+{{- define "cost-exporter.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,16 +27,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "cost-explorer.chart" -}}
+{{- define "cost-exporter.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "cost-explorer.labels" -}}
-helm.sh/chart: {{ include "cost-explorer.chart" . }}
-{{ include "cost-explorer.selectorLabels" . }}
+{{- define "cost-exporter.labels" -}}
+helm.sh/chart: {{ include "cost-exporter.chart" . }}
+{{ include "cost-exporter.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -45,17 +46,17 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "cost-explorer.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "cost-explorer.name" . }}
+{{- define "cost-exporter.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "cost-exporter.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "cost-explorer.serviceAccountName" -}}
+{{- define "cost-exporter.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "cost-explorer.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "cost-exporter.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}

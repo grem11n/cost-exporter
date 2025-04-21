@@ -1,0 +1,96 @@
+---
+# -- Log level is INFO by default.
+logLevel: INFO
+
+# -- Cost Exporter configuration
+#   It is then translated in the `config.yaml` inside the pods
+config:
+  # -- Only Prometheus format is supported for now
+  #   This value is ignored and only put here for
+  #   the demonstration purposes
+  metrics_format: "prometheus"
+  # -- Cloud client configuration
+  clients:
+    # -- Only AWS is supported
+    aws:
+      # -- Some default metrics for demonstration purposes
+      #   This configuration maps to the `costexplorer.GetCostAndUsageInput` type.
+      #   For more information about each field, see:
+      #   https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/costexplorer#GetCostAndUsageInput
+      metrics:
+        - granularity: "monthly"
+          metrics:
+            - "NetAmortizedCost"
+            - "NetUnblendedCost"
+          group_by:
+            - type: DIMENSION
+              key: SERVICE
+  outputs:
+    http:
+      port: 8080
+      # -- Path must contain a starting slash
+      path: "/metrics"
+
+# -- Image configuration
+image:
+  # -- Image repository
+  repository: "myrepo/cost-exporter"
+  # -- Configure image tag. Defaults to Chart.AppVerion
+  # tag: ""
+  # -- Configure image pull secrets for pulling container images
+  pullSecrets: []
+
+# -- Deployment configuration
+deployment:
+  # -- 2 replicas for HA, they act independently, which means
+  # that each replica issues requests to AWS.
+  # You can opt-in for a single replica to reduce the number of
+  # requests in favor of HA.
+  replicaCount: 2
+
+  # -- extraEnv allows you to pass additional variables
+  #   such as the cloud provider credentials.
+  #   Do not do it in production!
+  extraEnv: {}
+
+  # -- Other parameters for the Deployment
+  podSecurityContext: {}
+  tolerations: {}
+  affinity: {}
+  topologySpreadConstraints: {}
+  nodeSelector: {}
+
+  # -- Probes are started on a different port from the outputs
+  #   for the implementation simpicity
+  startupProbe: {}
+  livenessProbe:
+    httpGet:
+      path: /live
+      port: 8989
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /ready
+      port: 8989
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    failureThreshold: 3
+
+# -- ServiceAccount configuration
+serviceAccount:
+  # -- Create a serviceAccount by default
+  create: true
+  # -- Optionally, you can specify a serviceAccount name
+  #   This can be and existing serviceAccount
+  #   If you're using an existing serviceAccount, set create=false
+  name: ""
+  # -- awsRoleArn to specify the role to authenticate with AWS
+  #   AWS access for the cluster has to be configured separately
+  awsRoleArn: "foo"
+
+# -- Service configuration
+service:
+  type: ClusterIP
+  port: 8080

@@ -28,19 +28,19 @@ func init() {
 	}
 
 	// Get the log level from env
-	log_level := os.Getenv("LOG_LEVEL")
-	if log_level == "" {
+	logLevel := os.Getenv("LOG_LEVEL")
+	if logLevel == "" {
 		// Set default
-		log_level = "INFO"
+		logLevel = "INFO"
 	}
-	zap_level, err := zap.ParseAtomicLevel(log_level)
+	zapLevel, err := zap.ParseAtomicLevel(logLevel)
 	if err != nil {
 		log.Fatalf("Wrong log level set: %s", err)
 	}
 
 	// set up the logger
 	config := zap.Config{
-		Level:            zap_level,
+		Level:            zapLevel,
 		Development:      false,
 		Encoding:         "json",
 		EncoderConfig:    encoderConfig,
@@ -55,7 +55,7 @@ func init() {
 	}
 	defer logger.Sync()
 	sugar = logger.Sugar()
-	sugar.Info("Initiated logger. Log level: ", log_level)
+	sugar.Info("Initiated logger. Log level: ", logLevel)
 }
 
 func Info(args ...interface{}) {

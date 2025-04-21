@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "cost-exporter.fullname" . }}-config
+  labels:
+    {{- include "cost-exporter.labels" . | nindent 8 }}
+data:
+  config.yaml: |
+    clients:
+      {{- toYaml .Values.config.clients | nindent 6 }}
+    metrics_format: {{ .Values.config.metrics_format | default "prometheus" }}
+    outputs:
+      {{- toYaml .Values.config.outputs | nindent 6 }}

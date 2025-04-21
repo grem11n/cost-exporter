@@ -1,0 +1,89 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cost-exporter.fullname" . }}
+spec:
+  replicas: {{ .Values.deployment.replicaCount | default 2 }}
+  selector:
+    matchLabels:
+      {{- include "cost-exporter.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "cost-exporter.labels" . | nindent 8 }}
+    spec:
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+      {{- toYaml . | indent 8 }}
+      {{- end }}
+      {{- with .Values.deployment.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "cost-exporter.serviceAccountName" . }}
+      {{- with .Values.deployment.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.deployment.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.deployment.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.deployment.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | indent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ include "cost-exporter.name" . }}
+          image: "{{ .Values.image.repository}}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          args:
+            - -c
+            - /app/config.yaml
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+          env:
+            - name: LOG_LEVEL
+              value: {{ .Values.logLevel | default "INFO" }}
+            {{- with .Values.deployment.extraEnv }}
+            {{- toYaml . | trim | nindent 8 }}
+            {{- end }}
+          ports:
+            {{- with .Values.config }}
+            {{- with .outputs }}
+            - name: output
+              containerPort: {{ .port }}
+              protocol: TCP
+            {{- end }}
+            {{- end }}
+            {{- with .Values.deployment.livenessProbe }}
+            {{- with .httpGet }}
+            - name: probes
+              containerPort: {{ .port | default 8989 }}
+              protocol: TCP
+            {{- end }}
+            {{- end }}
+          {{- with .Values.deployment.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.deployment.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.deployment.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: /app/config.yaml
+              subPath: config.yaml
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "cost-exporter.fullname" . }}-config
+
