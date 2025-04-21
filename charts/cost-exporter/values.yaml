@@ -88,7 +88,7 @@ serviceAccount:
   name: ""
   # -- awsRoleArn to specify the role to authenticate with AWS
   #   AWS access for the cluster has to be configured separately
-  awsRoleArn: "foo"
+  awsRoleArn: ""
 
 # -- Service configuration
 service:
