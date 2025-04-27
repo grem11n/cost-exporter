@@ -14,6 +14,8 @@ Glory to Ukraine! 🇺
 
 ---
 
+[![Super-Linter](https://github.com/grem11n/cost-exporter/actions/workflows/lint/badge.svg)](https://github.com/marketplace/actions/super-linter)
+
 Cost Exporter is a small tool that gets your cost and usage metrics from AWS Cost 
 Explorer and outputs them in the Prometheus format.
 
