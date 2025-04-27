@@ -1,5 +1,19 @@
 # Cost Exporter
 
+## Welcome 👋
+
+[![SWUbanner](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/banner2-direct.svg)](https://github.com/vshymanskyy/StandWithUkraine/blob/main/docs/README.md)
+
+### Additional information for users from Russia and Belarus
+
+* Russia has [illegally annexed Crimea in 2014](https://en.wikipedia.org/wiki/Annexation_of_Crimea_by_the_Russian_Federation) and [brought the war in Donbas](https://en.wikipedia.org/wiki/War_in_Donbas) followed by [full-scale invasion of Ukraine in 2022](https://en.wikipedia.org/wiki/2022_Russian_invasion_of_Ukraine).
+* Russia has brought sorrow and devastations to millions of Ukrainians, killed hundreds of innocent people, damaged thousands of buildings, and forced several million people to flee.
+* [Putin khuylo!](https://en.wikipedia.org/wiki/Putin_khuylo!)
+
+Glory to Ukraine! 🇺
+
+---
+
 Cost Exporter is a small tool that gets your cost and usage metrics from AWS Cost 
 Explorer and outputs them in the Prometheus format.
 
@@ -28,7 +42,9 @@ but each of them seems to solve a very special use case of their respective crea
 Thus, I have created another project that solves my special use case!
 
 There is however a general purpose [Cost Exporter by Grafana](https://github.com/grafana/cloudcost-exporter).
-You should probably use that one if you're planning to run things in production.
+You should use that one if you're planning to run things in production,
+because it's maintained by an actual company and not a random dude on the Internet,
+who spends half a year battling the weather-induced depresion.
 
 Still, by the time I discovered the Grafana's exporter, I have already started some work related to this one.
 In theory, this exporter should also be fairely extensible both in terms of the cloud probider support (see the 
@@ -44,6 +60,12 @@ in the Prometheus format on an HTTP endpoint, because this is kind of the indust
 Cost Exporter comes with a [Helm](https://helm.sh/) chart, so you can deploy into a Kubernetes cluster.
 The chart is located in the [`charts/cost-exporter`](./charts/cost-exporter) directory of
 this repository.
+
+To install it using the Helm chart, do:
+
+```bash
+helm repo add ...
+```
 
 ```bash
 helm upgrade --install cost-exporter charts/cost-exporter --set serviceAccount.awsRoleArn="..."
@@ -98,6 +120,28 @@ There are three types of loops:
 - **Outputs**: "metric sinks", take care of providing converted metrics to the clients
 
 All the loops use a single `sync.Map` as an exchange point.
+
+```mermaid
+flowchart TD
+    CC[Cloud Client] -->|Fetch data from the cloud API| CA[Cache]
+    CA -->|Get raw cost metrics from cache| CV[Converter]
+    CV -->|Put converted metrics| CA
+    CA -->|Get converted metrics| O[Output]
+    O --> CL([Client])
+```
+
+Clients, converters, and outputs are implemented as registries of plugins.
+Thus, it should be relatively easy to add new ones.
+However, I personally believe that that is only make sense to have a single converted format per exporter.
+
+### Implemented so Far
+
+- **Cloud Clients**:
+    - AWS
+- **Converters**:
+    - AWS to Prometheus
+- **Outputs**:
+    - HTTP listener
 
 ## Further Thoughts
 
