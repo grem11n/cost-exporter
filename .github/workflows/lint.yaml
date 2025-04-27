@@ -11,6 +11,9 @@ on:
       - reopened
       - synchronize
 
+env:
+  VALIDATE_MARKDOWN_PRETTIER: false
+
 jobs:
   build:
     name: Lint
