@@ -1,4 +1,5 @@
 #checkov:skip=CKV_DOCKER_2: healthchecks are set in K8s
+#checkov:skip=CKV_DOCKER_3: this is a CI image
 ARG goreleaserImage=v2.3.2
 ARG golangImage=1.23.8-alpine
 FROM goreleaser/goreleaser:${goreleaserImage} AS goreleaser

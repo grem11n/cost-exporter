@@ -1,7 +1,6 @@
 package converters
 
 import (
-	"bytes"
 	"sync"
 	"testing"
 
@@ -57,7 +56,7 @@ func TestConvertAWSMetricsPositive(t *testing.T) {
 	testPrometheus.convertAWSMetrics(&mp)
 	got, ok := mp.Load(namespace)
 	assert.True(t, ok, "Cannot load test results from cache")
-	gotb, ok := got.(bytes.Buffer)
+	gotb, ok := got.([]byte)
 	assert.True(t, ok, "Cannot load test results from cache")
-	assert.Equal(t, expectedPrometheusMetrics, gotb.String())
+	assert.Equal(t, expectedPrometheusMetrics, string(gotb))
 }
