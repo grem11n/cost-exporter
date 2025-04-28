@@ -8,4 +8,3 @@ RUN apk add --no-cache git make bash \
     && go install github.com/kyoh86/richgo@latest \
     # Syft is required to generate SBOMs
     && curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
-USER 1001:1001

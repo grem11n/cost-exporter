@@ -176,7 +176,7 @@ Otherwise, create an new issue with your feedback and suggestions!
 - [alanwds/aws-cost-exporter](https://github.com/alanwds/aws-cost-exporter)
 
 ## TODO
-- [ ] Finish this README
+- [ ] Finish this readme
 - [ ] Update the job name for the metrics
 - [ ] Add CI for tests and release
 - [ ] Add instructions for release: maybe use Makefile?
