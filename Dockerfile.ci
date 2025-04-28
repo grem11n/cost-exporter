@@ -1,10 +1,10 @@
 #checkov:skip=CKV_DOCKER_2: healthchecks are set in K8s
+#checkov:skip=CKV_DOCKER_3: this is a CI image
 ARG goreleaserImage=v2.3.2
 ARG golangImage=1.23.8-alpine
 FROM goreleaser/goreleaser:${goreleaserImage} AS goreleaser
 FROM golang:${golangImage}
 COPY --from=goreleaser /usr/bin/goreleaser /usr/bin/goreleaser
-USER 1001:1001
 RUN apk add --no-cache git make bash \
     && go install github.com/kyoh86/richgo@latest \
     # Syft is required to generate SBOMs
