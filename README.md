@@ -1,25 +1,14 @@
 # Cost Exporter
 
-## Welcome 👋
-
-[![SWUbanner](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/banner2-direct.svg)](https://github.com/vshymanskyy/StandWithUkraine/blob/main/docs/README.md)
-
-### Additional information for users from Russia and Belarus
-
-- Russia has [illegally annexed Crimea in 2014](https://en.wikipedia.org/wiki/Annexation_of_Crimea_by_the_Russian_Federation) and [brought the war in Donbas](https://en.wikipedia.org/wiki/War_in_Donbas) followed by [full-scale invasion of Ukraine in 2022](https://en.wikipedia.org/wiki/2022_Russian_invasion_of_Ukraine).
-- Russia has brought sorrow and devastations to millions of Ukrainians, killed hundreds of innocent people, damaged thousands of buildings, and forced several million people to flee.
-- [Putin khuylo!](https://en.wikipedia.org/wiki/Putin_khuylo!)
-
-Glory to Ukraine! 🇺
-
----
-
-<!-- markdownlint-disable-next-line MD013 -->
-
-[![Super-Linter](https://github.com/grem11n/cost-exporter/actions/workflows/lint/badge.svg)](https://github.com/marketplace/actions/super-linter)
+<!-- markdownlint-disable MD013 -->
+[![Version](https://img.shields.io/badge/Version-0.0.1-blue)](https://github.com/grem11n/cost-exporter/releases/tag/0.0.1)
+[![Lint](https://github.com/grem11n/cost-exporter/actions/workflows/lint.yaml/badge.svg)](https://github.com/grem11n/cost-exporter/actions/workflows/lint.yaml)
+[![Unit Tests](https://github.com/grem11n/cost-exporter/actions/workflows/tests.yaml/badge.svg)](https://github.com/grem11n/cost-exporter/actions/workflows/tests.yaml)
 
 Cost Exporter is a small tool that gets your cost and usage metrics from AWS Cost
 Explorer and outputs them in the Prometheus format.
+
+[![SWUbanner](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/banner2-direct.svg)](https://github.com/vshymanskyy/StandWithUkraine/blob/main/docs/README.md)
 
 ## Table of Contents
 
@@ -44,6 +33,15 @@ There are other similar projects out there (see the "[Inspiration](#inspiration)
 but each of them seems to solve a very special use case of their respective creators.
 
 Thus, I have created another project that solves my special use case!
+Also, there is a caveat when working with the AWS Cost Explorer API:
+[you have to pay $0.01 for each API call](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/pricing/).
+While it doesn't sound like much, it's rather amusing that one has to pay to save costs.
+
+Some of the other projects make AWS API calls ad-hoc when a request for metrics comes.
+This can make the whole setup rather expensive for such a simple task.
+This project makes calls every hour or day (depends on the metrics granularity),
+thus reducing the number of API calls to a minimum.
+These data doesn't change that often anyway.
 
 There is however a general purpose [Cost Exporter by Grafana](https://github.com/grafana/cloudcost-exporter).
 You should use that one if you're planning to run things in production,
@@ -58,6 +56,10 @@ However, I work with AWS, so only AWS is supported for now. Also, the metrcs are
 in the Prometheus format on an HTTP endpoint, because this is kind of the industry standard.
 
 ## Usage
+
+There is a ready-to-go Helm chart available in the [`charts/cost-exporter`](./charts/cost-exporter/) directory.
+However, Cost Exporter is a Go applicaton which also has a Docker image avaialble.
+So, you can run it in any environment you want.
 
 ### Kubernetes
 
@@ -177,6 +179,8 @@ Otherwise, create an new issue with your feedback and suggestions!
 
 ## TODO
 - [ ] Finish this readme
-- [ ] Update the job name for the metrics
-- [ ] Add CI for tests and release
+- [ ] Add CI for Helm
+- [ ] Add CI for release
 - [ ] Add instructions for release: maybe use Makefile?
+- [ ] Publish artifacts to GHCR
+- [ ] Publish the Helm chart to ArtifactsHub

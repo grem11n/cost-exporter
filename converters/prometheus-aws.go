@@ -21,12 +21,12 @@ type PrometheusAWS struct{}
 const (
 	awsCachePrefix      = "aws_"
 	namespace           = "prometheus-aws"
-	defaultMetricPrefix = "ce_exporter"
+	defaultMetricPrefix = "aws_ce"
 	// We do not need to convert metrics too frequently,
 	// since they are propagated hourly
 	cooldown               = 30 // minutes
-	costMetricsCounterName = "cost_metrics_total{converter=\"prometheus-aws\"}"
-	conversionDurationName = "prometheus_aws_convertion_duration"
+	costMetricsCounterName = "cost_exporter_cost_metrics_total{job=\"cost-exporter\",converter=\"prometheus-aws\"}"
+	conversionDurationName = "cost_exporter_prometheus_aws_convertion_duration{job=\"cost-exporter\"}"
 )
 
 var (
@@ -80,7 +80,7 @@ func (p *PrometheusAWS) convertAWSMetrics(cache *sync.Map) bool {
 	vm := metrics.NewSet()
 	for name, groups := range metricNameMap {
 		for group, amount := range groups {
-			metricName := fmt.Sprintf("%s_%s{job=\"%s\",dimension=\"%s\"}", defaultMetricPrefix, strcase.ToSnake(name), "ce-exporter", group)
+			metricName := fmt.Sprintf("%s_%s{job=\"%s\",dimension=\"%s\"}", defaultMetricPrefix, strcase.ToSnake(name), "cost-exporter", group)
 			vm.GetOrCreateGauge(metricName, func() float64 {
 				return amount
 			})
