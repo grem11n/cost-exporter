@@ -1,0 +1,48 @@
+---
+name: Lint
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+
+env:
+  DOCKERFILE_HADOLINT_FILE_NAME: "hadolint.yaml"
+  GO_CONFIG_FILE: "golangci.yaml"
+  # Use GO_MODULES linter instead
+  VALIDATE_GO: false
+  VALIDATE_JSCPD: false
+  # Kubeconform runs separately,
+  # because we need to template Helm first
+  VALIDATE_KUBERNETES_KUBECONFORM: false
+  VALIDATE_MARKDOWN_PRETTIER: false
+  VALIDATE_YAML_PRETTIER: false
+  YAML_CONFIG_FILE: "yamllint.yaml"
+
+permissions: read-all
+jobs:
+  build:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Super-linter
+        uses: super-linter/super-linter/slim@v7.3.0
+        env:
+          # To report GitHub Actions status checks
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

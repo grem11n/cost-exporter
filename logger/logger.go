@@ -53,47 +53,49 @@ func init() {
 	if err != nil {
 		log.Fatalf("Unable to initiate the logger: %s", err)
 	}
-	defer logger.Sync()
+	// Not checking err because of:
+	// https://github.com/uber-go/zap/issues/880
+	defer logger.Sync() //nolint:errcheck
 	sugar = logger.Sugar()
 	sugar.Info("Initiated logger. Log level: ", logLevel)
 }
 
-func Info(args ...interface{}) {
+func Info(args ...any) {
 	sugar.Info(args)
 }
 
-func Infof(message string, args ...interface{}) {
+func Infof(message string, args ...any) {
 	sugar.Infof(message, args)
 }
 
-func Warn(args ...interface{}) {
+func Warn(args ...any) {
 	sugar.Warn(args)
 }
 
-func Warnf(message string, args ...interface{}) {
+func Warnf(message string, args ...any) {
 	sugar.Warnf(message, args)
 }
 
-func Error(args ...interface{}) {
+func Error(args ...any) {
 	sugar.Error(args)
 }
 
-func Errorf(message string, args ...interface{}) {
+func Errorf(message string, args ...any) {
 	sugar.Errorf(message, args)
 }
 
-func Fatal(args ...interface{}) {
+func Fatal(args ...any) {
 	sugar.Fatal(args)
 }
 
-func Fatalf(message string, args ...interface{}) {
+func Fatalf(message string, args ...any) {
 	sugar.Fatalf(message, args)
 }
 
-func Debug(args ...interface{}) {
+func Debug(args ...any) {
 	sugar.Debug(args)
 }
 
-func Debugf(message string, args ...interface{}) {
+func Debugf(message string, args ...any) {
 	sugar.Debugf(message, args)
 }

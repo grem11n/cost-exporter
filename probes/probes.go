@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/grem11n/cost-exporter/logger"
 )
@@ -66,21 +67,28 @@ func (p *Probes) Run() {
 	http.HandleFunc(p.LivenessProbeEndpoint, p.livenessProbe)
 	http.HandleFunc(p.ReadinessProbeEndpoint, p.readinessProbe)
 	http.HandleFunc(p.StartupProbeEndpoint, p.livenessProbe) // reuse Liveness for Startup
+
 	logger.Info("Starting the probes server")
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", p.Port), nil); err != nil {
+	server := &http.Server{
+		Addr:        fmt.Sprintf(":%d", p.Port),
+		ReadTimeout: 10 * time.Second, // hardcoded
+	}
+	if err := server.ListenAndServe(); err != nil {
 		logger.Fatal("Cannot start the probes server: ", err)
 	}
 }
 
-func (p *Probes) livenessProbe(w http.ResponseWriter, r *http.Request) {
+func (p *Probes) livenessProbe(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(200)
-	w.Write([]byte("OK"))
+	if _, err := w.Write([]byte("OK")); err != nil {
+		logger.Error("LivenessProbe write error: ", err)
+	}
 }
 
-func (p *Probes) readinessProbe(w http.ResponseWriter, r *http.Request) {
+func (p *Probes) readinessProbe(w http.ResponseWriter, _ *http.Request) {
 	code := 200
 	message := "OK"
-	p.Cache.Range(func(key, value any) bool {
+	p.Cache.Range(func(key, _ any) bool {
 		if key == nil {
 			code = 503
 			message = "503 - Metrics cache is empty"
@@ -89,5 +97,7 @@ func (p *Probes) readinessProbe(w http.ResponseWriter, r *http.Request) {
 		return true
 	})
 	w.WriteHeader(code)
-	w.Write([]byte(message))
+	if _, err := w.Write([]byte(message)); err != nil {
+		logger.Error("ReadinessProbe write error: ", err)
+	}
 }

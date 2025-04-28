@@ -46,13 +46,13 @@
 clients:
   aws:
     metrics:
-    - granularity: "monthly"
-      metrics:
-        - "NetAmortizedCost"
-        - "NetUnblendedCost"
-      group_by:
-        - type: DIMENSION
-          key: SERVICE
+      - granularity: "monthly"
+        metrics:
+          - "NetAmortizedCost"
+          - "NetUnblendedCost"
+        group_by:
+          - type: DIMENSION
+            key: SERVICE
 
 # Specify the metrics format to output
 # Currently, only prometheus format is supported

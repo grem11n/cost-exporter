@@ -53,7 +53,7 @@ func (c *Config) populateDefaults() error {
 
 	if c.Outputs == nil {
 		c.Outputs = make(map[string]outputs.OutputConfig)
-		c.Outputs["http"] = outputs.Http{}
+		c.Outputs["http"] = outputs.HTTP{}
 	}
 	return nil
 }

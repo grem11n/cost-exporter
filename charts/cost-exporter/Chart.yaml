@@ -1,3 +1,4 @@
+---
 apiVersion: v2
 name: cost-exporter
 description: An exporter for AWS Cost Explorer stats as metrics
