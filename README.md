@@ -22,6 +22,8 @@ Explorer and outputs them in the Prometheus format.
    2. [Logs](#logs)
 4. [Implementation](#implementation)
 5. [Further Thoughts](#further-thoughts)
+   1. [Adding More Clients, Converters, and Outputs](#adding-more-clients-converters-and-outputs)
+   2. [Other Improvements](#other-improvements)
 6. [Contribution](#contribution)
 7. [Inspiration](#inspiration)
 
@@ -81,9 +83,7 @@ You need to provide an IAM Role ARN, so the Cost Exporter pods can access AWS AP
 as well as the required configuration for AWS Cost Explorer.
 
 <!-- textlint-disable -->
-
 For the rest of the available Helm values, see the README in the [chart directory](./charts/cost-exporter/README.md).
-
 <!-- textlint-enable -->
 
 ### Configuration
@@ -156,6 +156,8 @@ However, I personally believe that that is only make sense to have a single conv
 
 ## Further Thoughts
 
+### Adding More Clients, Converters, and Outputs
+
 Since each client, converter, and output is essentially a plugin, it's possible to extend this exporter
 to support other cloud providers, output formats, and metric sinks.
 
@@ -163,12 +165,28 @@ For example, it should be possible to add a client for Azure or Google Cloud.
 However, I am personally not familiar with these providers.
 Also, it should be possible to, for example, push metrics to DataDog using their metrics format.
 
+### Other Improvements
+
+There are some things that could be improved in the codebase, e.g.:
+- Reduce the amount of hardcode required to set Prometheus labels and metric names
+- Automate the sync between the tag creation and Helm chart update somehow
+
 ## Contribution
 
 Since it's not particularly likely that I will do any serious updates to this project,
 feel free to create a PR!
 
 Otherwise, create an new issue with your feedback and suggestions!
+
+**Release Process**
+
+- Keep the version and the `AppVersion` in the Helm chart in sync
+- Preferably, keep the version and the Helm chart version itself also in sync
+<!-- textlint-disable -->
+- In case of any changes to the Helm chart, make sure to re-generate its README file
+- Udpate this README file with the new version icon before releasing
+<!-- textlint-enable -->
+- Create a new tag and let GHA and GoReleaser do their job
 
 ## Inspiration
 
@@ -181,6 +199,5 @@ Otherwise, create an new issue with your feedback and suggestions!
 - [ ] Finish this readme
 - [ ] Add CI for Helm
 - [ ] Add CI for release
-- [ ] Add instructions for release: maybe use Makefile?
 - [ ] Publish artifacts to GHCR
 - [ ] Publish the Helm chart to ArtifactsHub
