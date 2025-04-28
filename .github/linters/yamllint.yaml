@@ -1,0 +1,12 @@
+---
+extends: default
+ignore:
+  - charts/cost-exporter/templates/
+  - /github/workspace/charts/cost-exporter/templates/
+
+rules:
+  line-length:
+    max: 100
+    ignore:
+      - charts/cost-exporter/values.yaml
+      - config.example.yaml

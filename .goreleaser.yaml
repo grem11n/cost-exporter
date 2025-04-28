@@ -1,5 +1,6 @@
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 # vim: set ts=2 sw=2 tw=0 fo=cnqoj
+---
 version: 2
 project_name: "cost-exporter"
 
@@ -75,14 +76,14 @@ dockers:
       - --label=org.opencontainers.image.licenses=APACHE
 # Create and push Docker multi-platform images
 docker_manifests:
-- name_template: grem1in/{{ .ProjectName }}:{{ .Version }}
-  image_templates:
-  - grem1in/{{ .ProjectName }}:{{ .Version }}-amd64
-  - grem1in/{{ .ProjectName }}:{{ .Version }}-arm64v8
-- name_template: grem1in/{{ .ProjectName }}:latest
-  image_templates:
-  - grem1in/{{ .ProjectName }}:{{ .Version }}-amd64
-  - grem1in/{{ .ProjectName }}:{{ .Version }}-arm64v8
+  - name_template: grem1in/{{ .ProjectName }}:{{ .Version }}
+    image_templates:
+      - grem1in/{{ .ProjectName }}:{{ .Version }}-amd64
+      - grem1in/{{ .ProjectName }}:{{ .Version }}-arm64v8
+  - name_template: grem1in/{{ .ProjectName }}:latest
+    image_templates:
+      - grem1in/{{ .ProjectName }}:{{ .Version }}-amd64
+      - grem1in/{{ .ProjectName }}:{{ .Version }}-arm64v8
 
 changelog:
   sort: asc

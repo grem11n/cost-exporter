@@ -12,7 +12,12 @@ on:
       - synchronize
 
 env:
+  # Workaround for
+  # https://github.com/super-linter/super-linter/issues/5791
+  YAML_CONFIG_FILE: "yamllint.yaml"
   VALIDATE_MARKDOWN_PRETTIER: false
+  VALIDATE_YAML_PRETTIER: false
+  LOG_LEVEL: DEBUG
 
 jobs:
   build:
