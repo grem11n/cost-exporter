@@ -4,8 +4,8 @@ ARG golangImage=1.23.8-alpine
 FROM goreleaser/goreleaser:${goreleaserImage} AS goreleaser
 FROM golang:${golangImage}
 COPY --from=goreleaser /usr/bin/goreleaser /usr/bin/goreleaser
-USER 1001:1001
 RUN apk add --no-cache git make bash \
     && go install github.com/kyoh86/richgo@latest \
     # Syft is required to generate SBOMs
     && curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+USER 1001:1001
