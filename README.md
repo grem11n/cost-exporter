@@ -174,3 +174,9 @@ Otherwise, create an new issue with your feedback and suggestions!
 - [electrolux-oss/aws-cost-exporter](https://github.com/electrolux-oss/aws-cost-exporter)
 - [st8ed/aws-cost-exporter](https://github.com/st8ed/aws-cost-exporter)
 - [alanwds/aws-cost-exporter](https://github.com/alanwds/aws-cost-exporter)
+
+## TODO
+- [ ] Finish this README
+- [ ] Update the job name for the metrics
+- [ ] Add CI for tests and release
+- [ ] Add instructions for release: maybe use Makefile?

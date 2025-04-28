@@ -1,0 +1,32 @@
+---
+name: Unit Tests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+
+permissions: read-all
+jobs:
+  build:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Tests
+        run: |
+          #!/bin/bash
+          set -e
+          set -x
+          make docker-build-test-image
+          make docker-run-tests
