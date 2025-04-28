@@ -32,3 +32,7 @@ jobs:
       - name: Helm Lint
         working-directory: charts/cost-exporter
         run: "helm lint ."
+
+      - name: Kubeconform
+        working-directory: charts/cost-exporter
+        run: "helm template cost-explorer . --set serviceAccount.awsRoleArn=\"arn:aws:iam::account:role/role-name-with-path\" | kubeconform --verbose"
