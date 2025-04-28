@@ -25,14 +25,14 @@ var (
 			"AmazonCloudWatch":              0.35,
 		},
 	}
-	expectedPrometheusMetrics = `ce_exporter_net_amortized_cost{job="ce-exporter",dimension="AWS Cost Explorer"} 0.19
-ce_exporter_net_amortized_cost{job="ce-exporter",dimension="Amazon DynamoDB"} 0
-ce_exporter_net_amortized_cost{job="ce-exporter",dimension="Amazon Simple Storage Service"} 5
-ce_exporter_net_amortized_cost{job="ce-exporter",dimension="AmazonCloudWatch"} 0.31
-ce_exporter_net_unblended_cost{job="ce-exporter",dimension="AWS Cost Explorer"} 0.19
-ce_exporter_net_unblended_cost{job="ce-exporter",dimension="Amazon DynamoDB"} 0
-ce_exporter_net_unblended_cost{job="ce-exporter",dimension="Amazon Simple Storage Service"} 5
-ce_exporter_net_unblended_cost{job="ce-exporter",dimension="AmazonCloudWatch"} 0.35
+	expectedPrometheusMetrics = `aws_ce_net_amortized_cost{job="cost-exporter",dimension="AWS Cost Explorer"} 0.19
+aws_ce_net_amortized_cost{job="cost-exporter",dimension="Amazon DynamoDB"} 0
+aws_ce_net_amortized_cost{job="cost-exporter",dimension="Amazon Simple Storage Service"} 5
+aws_ce_net_amortized_cost{job="cost-exporter",dimension="AmazonCloudWatch"} 0.31
+aws_ce_net_unblended_cost{job="cost-exporter",dimension="AWS Cost Explorer"} 0.19
+aws_ce_net_unblended_cost{job="cost-exporter",dimension="Amazon DynamoDB"} 0
+aws_ce_net_unblended_cost{job="cost-exporter",dimension="Amazon Simple Storage Service"} 5
+aws_ce_net_unblended_cost{job="cost-exporter",dimension="AmazonCloudWatch"} 0.35
 `
 )
 

@@ -25,9 +25,9 @@ import (
 const (
 	maxRetryCount          = 3 // maximum number of allowed retries to get AWS metrics before giving up
 	keyPrefix              = "aws"
-	awsCallsSuccessName    = "aws_calls_total{result=\"success\"}"
-	awsCallsFailureName    = "aws_calls_total{result=\"failure\"}"
-	getMetricsDurationName = "aws_get_metrics_duration"
+	awsCallsSuccessName    = "cost_exporter_aws_calls_total{job=\"cost-exporter\",result=\"success\"}"
+	awsCallsFailureName    = "cost_exporter_aws_calls_total{job=\"cost-exporter\",result=\"failure\"}"
+	getMetricsDurationName = "cost_exporter_aws_get_metrics_duration{job=\"cost-exporter\"}"
 )
 
 var (
