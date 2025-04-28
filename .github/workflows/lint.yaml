@@ -12,12 +12,13 @@ on:
       - synchronize
 
 env:
-  # Workaround for
-  # https://github.com/super-linter/super-linter/issues/5791
   YAML_CONFIG_FILE: "yamllint.yaml"
   VALIDATE_MARKDOWN_PRETTIER: false
   VALIDATE_YAML_PRETTIER: false
-  LOG_LEVEL: DEBUG
+  VALIDATE_JSCPD: false
+  # Kubeconform runs separately,
+  # because we need to template Helm first
+  VALIDATE_KUBERNETES_KUBECONFORM: false
 
 jobs:
   build:
