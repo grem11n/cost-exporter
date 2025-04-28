@@ -53,11 +53,9 @@ func init() {
 	if err != nil {
 		log.Fatalf("Unable to initiate the logger: %s", err)
 	}
-	defer func() {
-		if tmpErr := logger.Sync(); tmpErr != nil {
-			log.Fatalf("Unable to sync the logger: %s", tmpErr)
-		}
-	}()
+	// Not checking err because of:
+	// https://github.com/uber-go/zap/issues/880
+	defer logger.Sync() //nolint:errcheck
 	sugar = logger.Sugar()
 	sugar.Info("Initiated logger. Log level: ", logLevel)
 }

@@ -37,7 +37,7 @@ var (
 )
 
 func TestBuildCostAndUsageInputNoFilter(t *testing.T) {
-	interval, _ := time.ParseDuration("24h") // 1 day
+	interval, _ := time.ParseDuration("24h") //nolint:errcheck
 	endDate := time.Now().UTC().Format("2006-01-02")
 	startDate := time.Now().UTC().Add(-interval).Format("2006-01-02")
 	expected := testCostAndUsageInput
@@ -59,7 +59,7 @@ func TestBuildCostAndUsageInputFilter(t *testing.T) {
 			Values: []string{"AWS Cost Explorer"},
 		},
 	}
-	interval, _ := time.ParseDuration("24h") // 1 day
+	interval, _ := time.ParseDuration("24h") //nolint:errcheck
 	endDate := time.Now().UTC().Format("2006-01-02")
 	startDate := time.Now().UTC().Add(-interval).Format("2006-01-02")
 	expected := testCostAndUsageInput

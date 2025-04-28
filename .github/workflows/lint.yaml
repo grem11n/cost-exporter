@@ -12,14 +12,19 @@ on:
       - synchronize
 
 env:
-  YAML_CONFIG_FILE: "yamllint.yaml"
-  VALIDATE_MARKDOWN_PRETTIER: false
-  VALIDATE_YAML_PRETTIER: false
+  DOCKERFILE_HADOLINT_FILE_NAME: "hadolint.yaml"
+  GO_CONFIG_FILE: "golangci.yaml"
+  # Use GO_MODULES linter instead
+  VALIDATE_GO: false
   VALIDATE_JSCPD: false
   # Kubeconform runs separately,
   # because we need to template Helm first
   VALIDATE_KUBERNETES_KUBECONFORM: false
+  VALIDATE_MARKDOWN_PRETTIER: false
+  VALIDATE_YAML_PRETTIER: false
+  YAML_CONFIG_FILE: "yamllint.yaml"
 
+permissions: read-all
 jobs:
   build:
     name: Lint

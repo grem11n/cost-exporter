@@ -224,15 +224,15 @@ func buildCostAndUsageInput(metric *MetricsConfig, pageToken *string) (*costexpl
 	// AWS requires different time formats depending on granularity
 	switch strings.ToLower(metric.Granularity) {
 	case "monthly":
-		interval, _ := time.ParseDuration("730h") // 1 month
+		interval, _ := time.ParseDuration("730h") //nolint:errcheck
 		endDate = nowUtc.Format("2006-01-02")
 		startDate = nowUtc.Add(-interval).Format("2006-01-02")
 	case "daily":
-		interval, _ := time.ParseDuration("24h") // 1 day
+		interval, _ := time.ParseDuration("24h") //nolint:errcheck
 		endDate = nowUtc.Format("2006-01-02")
 		startDate = nowUtc.Add(-interval).Format("2006-01-02")
 	case "hourly":
-		interval, _ := time.ParseDuration("1h") // 1 hour
+		interval, _ := time.ParseDuration("1h") //nolint:errcheck
 		endDate = nowUtc.Format(time.RFC3339)
 		startDate = nowUtc.Add(-interval).Format(time.RFC3339)
 	default:

@@ -6,11 +6,12 @@ import (
 	"io"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/grem11n/cost-exporter/logger"
 )
 
-type Http struct {
+type HTTP struct {
 	Path string
 	Port int
 }
@@ -22,10 +23,10 @@ const (
 
 func init() {
 	logger.Info("Initializing HTTP output")
-	Register("http", func(OutputConfig) Output { return &Http{} })
+	Register("http", func(OutputConfig) Output { return &HTTP{} })
 }
 
-func (h *Http) Publish(keys []string, cache *sync.Map) {
+func (h *HTTP) Publish(keys []string, cache *sync.Map) {
 	path := h.Path
 	if path == "" {
 		logger.Infof("Using the default metrics path: ", defaultPath)
@@ -39,14 +40,19 @@ func (h *Http) Publish(keys []string, cache *sync.Map) {
 	http.HandleFunc("/", h.handleRoot(path))
 	http.HandleFunc(path, h.handleMetrics(keys, cache))
 
+	server := &http.Server{
+		Addr:              fmt.Sprintf(":%d", port),
+		ReadHeaderTimeout: 10 * time.Second, // hardcoded
+	}
+
 	logger.Info(fmt.Sprintf("Started listening on: \":%d\"", port))
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
+	if err := server.ListenAndServe(); err != nil {
 		logger.Fatal("Cannot start HTTP server: ", err)
 	}
 }
 
-func (h *Http) handleRoot(metricsPath string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (h *HTTP) handleRoot(metricsPath string) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		if _, err := io.WriteString(
 			w, fmt.Sprintf("Welcome to Costs Exporter! Cost metrics are available at: %s", metricsPath),
 		); err != nil {
@@ -55,7 +61,7 @@ func (h *Http) handleRoot(metricsPath string) http.HandlerFunc {
 	}
 }
 
-func (h *Http) handleMetrics(keys []string, cache *sync.Map) http.HandlerFunc {
+func (h *HTTP) handleMetrics(keys []string, cache *sync.Map) http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
 		logger.Info("Got request for metrics")
 		var res bytes.Buffer
