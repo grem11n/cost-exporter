@@ -42,8 +42,8 @@ While it doesn't sound like much, it's rather amusing that one has to pay to sav
 Some of the other projects make AWS API calls ad-hoc when a request for metrics comes.
 This can make the whole setup rather expensive for such a simple task.
 This project makes calls every hour or day (depends on the metrics granularity),
-thus reducing the number of API calls to a minimum.
-These data doesn't change that often anyway.
+(see "[Implementation](#implementation)" for more details),
+thus reducing the number of API calls to a minimum. These data doesn't change that often anyway.
 
 There is however a general purpose [Cost Exporter by Grafana](https://github.com/grafana/cloudcost-exporter).
 You should use that one if you're planning to run things in production,
@@ -144,6 +144,10 @@ flowchart TD
 Clients, converters, and outputs are implemented as registries of plugins.
 Thus, it should be relatively easy to add new ones.
 However, I personally believe that that is only make sense to have a single converted format per exporter.
+
+Initially, this project was designed around a single cache to decrease the number of AWS API calls,
+since [those are paid](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/pricing/).
+However, later on I realized that this could be a neat way to make this exporter extensible.
 
 ### Implemented so Far
 
