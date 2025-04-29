@@ -31,7 +31,7 @@ jobs:
 
       - name: Helm Lint
         working-directory: charts/cost-exporter
-        run: "helm lint ."
+        run: helm lint .
 
       - name: Kubeconform
         working-directory: charts/cost-exporter
@@ -42,4 +42,4 @@ jobs:
 
       - name: Helm Unittest
         working-directory: charts/cost-exporter
-        run: "helm unittest ."
+        run: helm unittest .
