@@ -25,5 +25,3 @@ tests:
               http:
                 path: /metrics
                 port: 8080
-
-
