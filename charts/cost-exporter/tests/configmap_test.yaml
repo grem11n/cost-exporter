@@ -1,0 +1,27 @@
+---
+suite: Test ConfigMap
+templates:
+  - configmap.yaml
+tests:
+  - it: should populate ConfigMap from separate values
+    set:
+      config.clients:
+        aws:
+          metrics: {}
+      config.metrics_format: prometheus
+      config.outputs:
+        http:
+          port: 8080
+          path: "/metrics"
+    asserts:
+      - equal:
+          path: data["config.yaml"]
+          value: |
+            clients:
+              aws:
+                metrics: {}
+            metrics_format: prometheus
+            outputs:
+              http:
+                path: /metrics
+                port: 8080

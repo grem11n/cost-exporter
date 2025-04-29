@@ -1,0 +1,48 @@
+---
+name: Helm Tests
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - charts/*
+      - .github/workflows/helm-tests.yaml
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+    paths:
+      - charts/*
+      - .github/workflows/helm-tests.yaml
+
+permissions: read-all
+jobs:
+  helm-tests:
+    runs-on: ubuntu-latest
+    container:
+      image: alpine/k8s:1.33.0
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Helm Lint
+        working-directory: charts/cost-exporter
+        run: |
+          helm lint .
+
+      - name: Kubeconform
+        working-directory: charts/cost-exporter
+        run: |
+          helm template cost-explorer . \
+          --set serviceAccount.awsRoleArn="arn:aws:iam::account:role/role-name-with-path" | \
+          kubeconform --verbose
+
+      - name: Helm Unittest
+        working-directory: charts/cost-exporter
+        run: |
+          helm plugin install https://github.com/helm-unittest/helm-unittest.git
+          helm unittest .

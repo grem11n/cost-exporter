@@ -167,7 +167,7 @@ to support other cloud providers, output formats, and metric sinks.
 
 For example, it should be possible to add a client for Azure or Google Cloud.
 However, I am personally not familiar with these providers.
-Also, it should be possible to, for example, push metrics to DataDog using their metrics format.
+Also, it should be possible to, for example, push metrics to CloudWatch using their metrics format, etc.
 
 ### Other Improvements
 
@@ -201,7 +201,6 @@ Otherwise, create an new issue with your feedback and suggestions!
 
 ## TODO
 - [ ] Finish this readme
-- [ ] Add CI for Helm
 - [ ] Add CI for release
 - [ ] Publish artifacts to GHCR
 - [ ] Publish the Helm chart to ArtifactsHub

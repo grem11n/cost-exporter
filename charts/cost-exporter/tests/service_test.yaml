@@ -1,0 +1,24 @@
+---
+suite: Test Service
+templates:
+  - service.yaml
+tests:
+  - it: should use a custom Service port
+    set:
+      service.port: 8989
+    asserts:
+      - equal:
+          path: spec.ports[0].port
+          value: 8989
+  - it: should use a custom target port
+    set:
+      outputs.http.port: 8989
+    asserts:
+      - equal:
+          path: spec.ports[0].targetPort
+          value: 8989
+  - it: should use the default target port
+    asserts:
+      - equal:
+          path: spec.ports[0].targetPort
+          value: 8080

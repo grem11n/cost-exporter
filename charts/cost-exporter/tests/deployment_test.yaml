@@ -1,0 +1,19 @@
+---
+suite: Test Deployment
+templates:
+  - deployment.yaml
+tests:
+  - it: should use a containerPort from config
+    set:
+      config.outputs.http.port: 8989
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].ports[0].containerPort
+          value: 8989
+  - it: should use probes port from livenessProbe
+    set:
+      deployment.livenessProbe.httpGet.port: 8989
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].ports[1].containerPort
+          value: 8989
