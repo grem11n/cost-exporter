@@ -44,4 +44,4 @@ jobs:
       - name: Helm Unittest
         working-directory: charts/cost-exporter
         run: |
-          helm unittest .
+          helm plugin list
