@@ -168,20 +168,24 @@ to support other cloud providers, output formats, and metric sinks.
 
 For example, it should be possible to add a client for Azure or Google Cloud.
 However, I am personally not familiar with these providers.
+
 Also, it should be possible to, for example, push metrics to CloudWatch using their metrics format, etc.
+After all, CloudWatch is an AWS native tool.
 
 ### Other Improvements
 
 There are some things that could be improved in the codebase, e.g.:
 - Reduce the amount of hardcode required to set Prometheus labels and metric names
 - Automate the sync between the tag creation and Helm chart update somehow
+- Add other deploy manifests. For example, Terraform configuration for AWS ECS
 
 ## Contribution
 
 Since it's not particularly likely that I will do any serious updates to this project,
 feel free to create a PR!
-
 Otherwise, create an new issue with your feedback and suggestions!
+
+Also, there are some ideas for improvements in the "[Further Thoughts](#further-thoughts)" section.
 
 **Release Process**
 
