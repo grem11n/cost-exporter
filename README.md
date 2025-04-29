@@ -4,6 +4,7 @@
 [![Version](https://img.shields.io/badge/Version-0.0.1-blue)](https://github.com/grem11n/cost-exporter/releases/tag/0.0.1)
 [![Lint](https://github.com/grem11n/cost-exporter/actions/workflows/lint.yaml/badge.svg)](https://github.com/grem11n/cost-exporter/actions/workflows/lint.yaml)
 [![Unit Tests](https://github.com/grem11n/cost-exporter/actions/workflows/tests.yaml/badge.svg)](https://github.com/grem11n/cost-exporter/actions/workflows/tests.yaml)
+[![Helm Tests](https://github.com/grem11n/cost-exporter/actions/workflows/helm-tests.yaml/badge.svg)](https://github.com/grem11n/cost-exporter/actions/workflows/helm-tests.yaml)
 
 Cost Exporter is a small tool that gets your cost and usage metrics from AWS Cost
 Explorer and outputs them in the Prometheus format.
