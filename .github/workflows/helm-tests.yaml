@@ -35,4 +35,11 @@ jobs:
 
       - name: Kubeconform
         working-directory: charts/cost-exporter
-        run: "helm template cost-explorer . --set serviceAccount.awsRoleArn=\"arn:aws:iam::account:role/role-name-with-path\" | kubeconform --verbose"
+        run: |
+          helm template cost-explorer . \
+          --set serviceAccount.awsRoleArn="arn:aws:iam::account:role/role-name-with-path" | \
+          kubeconform --verbose
+
+      - name: Helm Unittest
+        working-directory: charts/cost-exporter
+        run: "helm unittest ."
