@@ -5,6 +5,7 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue)](./LICENSE)
 [![Lint](https://github.com/grem11n/cost-exporter/actions/workflows/lint.yaml/badge.svg)](https://github.com/grem11n/cost-exporter/actions/workflows/lint.yaml)
 [![Unit Tests](https://github.com/grem11n/cost-exporter/actions/workflows/tests.yaml/badge.svg)](https://github.com/grem11n/cost-exporter/actions/workflows/tests.yaml)
+[![Go Report](https://goreportcard.com/badge/github.com/grem11n/cost-exporter)](https://goreportcard.com/report/github.com/grem11n/cost-exporter)
 [![Helm Tests](https://github.com/grem11n/cost-exporter/actions/workflows/helm-tests.yaml/badge.svg)](https://github.com/grem11n/cost-exporter/actions/workflows/helm-tests.yaml)
 
 Cost Exporter is a small tool that gets your cost and usage metrics from AWS Cost
@@ -211,5 +212,3 @@ Also, there are some ideas for improvements in the "[Further Thoughts](#further-
 
 - [ ] Finish this readme
 - [ ] Publish the Helm chart to ArtifactsHub
-- [ ] Enable Dependabot or Renovate
-- [ ] Generate GoReport: <https://goreportcard.com/>
