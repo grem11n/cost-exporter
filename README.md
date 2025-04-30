@@ -125,6 +125,7 @@ The default log level is set to `INFO`.
 ## Implementation
 
 In nutshell, Cost Exporter is just a bunch of control loops that use a single exchange point.
+Because everything is a control loop, when you have worked with Kubernetes long enough.
 
 There are three types of loops:
 
@@ -179,6 +180,7 @@ There are some things that could be improved in the codebase, e.g.:
 - Reduce the amount of hardcode required to set Prometheus labels and metric names
 - Automate the sync between the tag creation and Helm chart update somehow
 - Add other deploy manifests. For example, Terraform configuration for AWS ECS
+- Create a Grafana dashboard based on the metrics
 
 ## Contribution
 
@@ -208,8 +210,6 @@ Also, there are some ideas for improvements in the "[Further Thoughts](#further-
 ## TODO
 
 - [ ] Finish this readme
-- [ ] Add CI for release
-- [ ] Publish artifacts to GHCR
 - [ ] Publish the Helm chart to ArtifactsHub
 - [ ] Enable Dependabot or Renovate
 - [ ] Generate GoReport: <https://goreportcard.com/>
