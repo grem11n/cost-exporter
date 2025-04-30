@@ -2,6 +2,7 @@
 
 <!-- markdownlint-disable MD013 -->
 [![Version](https://img.shields.io/badge/Version-0.0.1-blue)](https://github.com/grem11n/cost-exporter/releases/tag/0.0.1)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue)](./LICENSE)
 [![Lint](https://github.com/grem11n/cost-exporter/actions/workflows/lint.yaml/badge.svg)](https://github.com/grem11n/cost-exporter/actions/workflows/lint.yaml)
 [![Unit Tests](https://github.com/grem11n/cost-exporter/actions/workflows/tests.yaml/badge.svg)](https://github.com/grem11n/cost-exporter/actions/workflows/tests.yaml)
 [![Helm Tests](https://github.com/grem11n/cost-exporter/actions/workflows/helm-tests.yaml/badge.svg)](https://github.com/grem11n/cost-exporter/actions/workflows/helm-tests.yaml)
@@ -205,7 +206,10 @@ Also, there are some ideas for improvements in the "[Further Thoughts](#further-
 - [alanwds/aws-cost-exporter](https://github.com/alanwds/aws-cost-exporter)
 
 ## TODO
+
 - [ ] Finish this readme
 - [ ] Add CI for release
 - [ ] Publish artifacts to GHCR
 - [ ] Publish the Helm chart to ArtifactsHub
+- [ ] Enable Dependabot or Renovate
+- [ ] Generate GoReport: https://goreportcard.com/
