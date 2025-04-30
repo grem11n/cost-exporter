@@ -13,12 +13,13 @@ on:
 
 env:
   DOCKERFILE_HADOLINT_FILE_NAME: "hadolint.yaml"
+  # Workaround for: https://github.com/rhysd/actionlint/pull/535
+  FILTER_REGEX_EXCLUDE: ".github/workflows/release.yaml"
   GO_CONFIG_FILE: "golangci.yaml"
   # Use GO_MODULES linter instead
   VALIDATE_GO: false
   VALIDATE_JSCPD: false
-  # Kubeconform runs separately,
-  # because we need to template Helm first
+  # Kubeconform runs separately, because we need to template Helm first
   VALIDATE_KUBERNETES_KUBECONFORM: false
   VALIDATE_MARKDOWN_PRETTIER: false
   VALIDATE_YAML_PRETTIER: false

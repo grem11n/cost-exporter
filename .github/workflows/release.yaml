@@ -64,4 +64,5 @@ jobs:
       - name: Helm Push
         working-directory: charts/cost-exporter
         run: |
-          helm push cost-exporter-${{  github.ref_name }}.tgz oci://ghcr.io/${{ github.repository_owner }}/cost-exporter
+          helm push cost-exporter-${{  github.ref_name }}.tgz \
+          oci://ghcr.io/${{ github.repository_owner }}/cost-exporter
