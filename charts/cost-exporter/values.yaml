@@ -34,7 +34,7 @@ config:
 # -- Image configuration
 image:
   # -- Image repository
-  repository: "myrepo/cost-exporter"
+  repository: "ghcr.io/grem11n/cost-exporter"
   # -- Configure image tag. Defaults to Chart.AppVerion
   # tag: ""
   # -- Configure image pull secrets for pulling container images

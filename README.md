@@ -212,4 +212,4 @@ Also, there are some ideas for improvements in the "[Further Thoughts](#further-
 - [ ] Publish artifacts to GHCR
 - [ ] Publish the Helm chart to ArtifactsHub
 - [ ] Enable Dependabot or Renovate
-- [ ] Generate GoReport: https://goreportcard.com/
+- [ ] Generate GoReport: <https://goreportcard.com/>

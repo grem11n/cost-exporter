@@ -1,3 +1,4 @@
+---
 name: Release
 
 on:
@@ -29,7 +30,8 @@ jobs:
           password: ${{ secrets.GH_RELEASE_TOKEN }}
       - name: Install Syft
         run: |
-          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | \
+          sh -s -- -b /usr/local/bin
           syft --version
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -43,3 +45,23 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
+      - name: GitHub Attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-checksums: ./dist/checksums.txt
+
+  helm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Helm
+        uses: azure/setup-helm@v4.3.0
+        with:
+          version: v3.17.3
+      - name: Helm Push
+        working-directory: charts/cost-exporter
+        run: |
+          helm push cost-exporter-${{  github.ref_name }}.tgz oci://ghcr.io/${{ github.repository_owner }}/cost-exporter
