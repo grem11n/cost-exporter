@@ -1,9 +1,8 @@
-<!-- markdownlint-disable MD013 -->
 # cost-exporter
 
-![Version: 0.0.1](https://img.shields.io/badge/Version-0.0.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.0.1](https://img.shields.io/badge/AppVersion-0.0.1-informational?style=flat-square)
+![Version: 0.0.1](https://img.shields.io/badge/Version-0.0.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v0.0.1](https://img.shields.io/badge/AppVersion-v0.0.1-informational?style=flat-square)
 
-An exporter for AWS Cost Explorer stats as metrics
+A Helm chart to deploy https://github.com/grem11n/cost-exporter
 
 ## Values
 
@@ -12,7 +11,7 @@ An exporter for AWS Cost Explorer stats as metrics
 | config | object | `{"clients":{"aws":{"metrics":[{"granularity":"monthly","group_by":[{"key":"SERVICE","type":"DIMENSION"}],"metrics":["NetAmortizedCost","NetUnblendedCost"]}]}},"metrics_format":"prometheus","outputs":{"http":{"path":"/metrics","port":8080}}}` | Cost Exporter configuration   It is then translated in the `config.yaml` inside the pods |
 | config.clients | object | `{"aws":{"metrics":[{"granularity":"monthly","group_by":[{"key":"SERVICE","type":"DIMENSION"}],"metrics":["NetAmortizedCost","NetUnblendedCost"]}]}}` | Cloud client configuration |
 | config.clients.aws | object | `{"metrics":[{"granularity":"monthly","group_by":[{"key":"SERVICE","type":"DIMENSION"}],"metrics":["NetAmortizedCost","NetUnblendedCost"]}]}` | Only AWS is supported |
-| config.clients.aws.metrics | list | `[{"granularity":"monthly","group_by":[{"key":"SERVICE","type":"DIMENSION"}],"metrics":["NetAmortizedCost","NetUnblendedCost"]}]` | Some default metrics for demonstration purposes   This configuration maps to the `costexplorer.GetCostAndUsageInput` type.   For more information about each field, see: <https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/costexplorer#GetCostAndUsageInput> |
+| config.clients.aws.metrics | list | `[{"granularity":"monthly","group_by":[{"key":"SERVICE","type":"DIMENSION"}],"metrics":["NetAmortizedCost","NetUnblendedCost"]}]` | Some default metrics for demonstration purposes   This configuration maps to the `costexplorer.GetCostAndUsageInput` type.   For more information about each field, see:   https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/costexplorer#GetCostAndUsageInput |
 | config.metrics_format | string | `"prometheus"` | Only Prometheus format is supported for now   This value is ignored and only put here for   the demonstration purposes |
 | config.outputs.http.path | string | `"/metrics"` | Path must contain a starting slash |
 | deployment | object | `{"affinity":{},"extraEnv":{},"livenessProbe":{"failureThreshold":3,"httpGet":{"path":"/live","port":8989},"initialDelaySeconds":5,"periodSeconds":5},"nodeSelector":{},"podSecurityContext":{},"readinessProbe":{"failureThreshold":3,"httpGet":{"path":"/ready","port":8989},"initialDelaySeconds":5,"periodSeconds":5},"replicaCount":2,"startupProbe":{},"tolerations":{},"topologySpreadConstraints":{}}` | Deployment configuration |
@@ -20,9 +19,9 @@ An exporter for AWS Cost Explorer stats as metrics
 | deployment.podSecurityContext | object | `{}` | Other parameters for the Deployment |
 | deployment.replicaCount | int | `2` | 2 replicas for HA, they act independently, which means that each replica issues requests to AWS. You can opt-in for a single replica to reduce the number of requests in favor of HA. |
 | deployment.startupProbe | object | `{}` | Probes are started on a different port from the outputs   for the implementation simpicity |
-| image | object | `{"pullSecrets":[],"repository":"myrepo/cost-exporter"}` | Image configuration |
+| image | object | `{"pullSecrets":[],"repository":"ghcr.io/grem11n/cost-exporter"}` | Image configuration |
 | image.pullSecrets | list | `[]` | Configure image pull secrets for pulling container images |
-| image.repository | string | `"myrepo/cost-exporter"` | Image repository |
+| image.repository | string | `"ghcr.io/grem11n/cost-exporter"` | Image repository |
 | logLevel | string | `"INFO"` | Log level is INFO by default. |
 | service | object | `{"port":8080,"type":"ClusterIP"}` | Service configuration |
 | serviceAccount | object | `{"awsRoleArn":"","create":true,"name":""}` | ServiceAccount configuration |

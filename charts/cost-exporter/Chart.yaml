@@ -1,7 +1,7 @@
 ---
 apiVersion: v2
 name: cost-exporter
-description: An exporter for AWS Cost Explorer stats as metrics
+description: A Helm chart to deploy https://github.com/grem11n/cost-exporter
 type: application
 version: 0.0.1
-appVersion: "0.0.1"
+appVersion: "v0.0.1"

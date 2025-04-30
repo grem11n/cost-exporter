@@ -39,6 +39,9 @@ archives:
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
 
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+
 dockers:
   - id: cost-exporter-amd64
     use: buildx
@@ -91,3 +94,10 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+
+release:
+  name_template: "{{ .ProjectName }} {{ .Tag }}"
+  header: |
+    ## Released on {{ .Date }}
+
+    ## Changelog

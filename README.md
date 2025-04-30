@@ -1,7 +1,7 @@
 # Cost Exporter
 
 <!-- markdownlint-disable MD013 -->
-[![Version](https://img.shields.io/badge/Version-0.0.1-blue)](https://github.com/grem11n/cost-exporter/releases/tag/0.0.1)
+[![Version](https://img.shields.io/badge/Version-v0.0.1-blue)](https://github.com/grem11n/cost-exporter/releases/tag/v0.0.1)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue)](./LICENSE)
 [![Lint](https://github.com/grem11n/cost-exporter/actions/workflows/lint.yaml/badge.svg)](https://github.com/grem11n/cost-exporter/actions/workflows/lint.yaml)
 [![Unit Tests](https://github.com/grem11n/cost-exporter/actions/workflows/tests.yaml/badge.svg)](https://github.com/grem11n/cost-exporter/actions/workflows/tests.yaml)
