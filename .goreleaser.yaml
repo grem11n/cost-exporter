@@ -40,7 +40,7 @@ archives:
       {{- if .Arm }}v{{ .Arm }}{{ end }}
 
 checksum:
-  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+  name_template: "checksums.txt"
 
 dockers:
   - id: cost-exporter-amd64
@@ -98,6 +98,4 @@ changelog:
 release:
   name_template: "{{ .ProjectName }} {{ .Tag }}"
   header: |
-    ## Released on {{ .Date }}
-
-    ## Changelog
+    Released on {{ .Date }}
