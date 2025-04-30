@@ -26,7 +26,7 @@ const (
 	// since they are propagated hourly
 	cooldown               = 30 // minutes
 	costMetricsCounterName = "cost_exporter_cost_metrics_total{job=\"cost-exporter\",converter=\"prometheus-aws\"}"
-	conversionDurationName = "cost_exporter_prometheus_aws_convertion_duration{job=\"cost-exporter\"}"
+	conversionDurationName = "cost_exporter_prometheus_aws_conversion_duration{job=\"cost-exporter\"}"
 )
 
 var (

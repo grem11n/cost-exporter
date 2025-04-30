@@ -112,7 +112,7 @@ Here's the list of available internal metrics with their types, units and descri
 | aws_calls_total                           | `count`     |      | Total calls made to AWS API               |
 | aws_get_metrics_duration                  | `histogram` | `ms` | Duration of API calls to AWS              |
 | cost_metrics_total                        | `counter`   |      | Total number of the exported cost metrics |
-| prometheus_aws_convertion_duration_bucket | `histogram` | `ms` | Time it takes to convert the cost metrics |
+| prometheus_aws_conversion_duration_bucket | `histogram` | `ms` | Time it takes to convert the cost metrics |
 
 ### Logs
 
