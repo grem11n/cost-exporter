@@ -3,9 +3,10 @@
 <!-- markdownlint-disable MD013 -->
 [![Version](https://img.shields.io/badge/Version-v0.0.1-blue)](https://github.com/grem11n/cost-exporter/releases/tag/v0.0.1)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue)](./LICENSE)
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/cost-exporter)](https://artifacthub.io/packages/search?repo=cost-exporter)
+[![Go Report](https://goreportcard.com/badge/github.com/grem11n/cost-exporter)](https://goreportcard.com/report/github.com/grem11n/cost-exporter)
 [![Lint](https://github.com/grem11n/cost-exporter/actions/workflows/lint.yaml/badge.svg)](https://github.com/grem11n/cost-exporter/actions/workflows/lint.yaml)
 [![Unit Tests](https://github.com/grem11n/cost-exporter/actions/workflows/tests.yaml/badge.svg)](https://github.com/grem11n/cost-exporter/actions/workflows/tests.yaml)
-[![Go Report](https://goreportcard.com/badge/github.com/grem11n/cost-exporter)](https://goreportcard.com/report/github.com/grem11n/cost-exporter)
 [![Helm Tests](https://github.com/grem11n/cost-exporter/actions/workflows/helm-tests.yaml/badge.svg)](https://github.com/grem11n/cost-exporter/actions/workflows/helm-tests.yaml)
 
 Cost Exporter is a small tool that gets your cost and usage metrics from AWS Cost
@@ -79,7 +80,7 @@ helm repo add ...
 ```
 
 ```bash
-helm upgrade --install cost-exporter charts/cost-exporter --set serviceAccount.awsRoleArn="..."
+helm upgrade --install cost-exporter oci://ghcr.io/grem11n/charts/cost-exporter --set serviceAccount.awsRoleArn="..."
 ```
 
 You need to provide an IAM Role ARN, so the Cost Exporter pods can access AWS API,
@@ -207,8 +208,3 @@ Also, there are some ideas for improvements in the "[Further Thoughts](#further-
 - [electrolux-oss/aws-cost-exporter](https://github.com/electrolux-oss/aws-cost-exporter)
 - [st8ed/aws-cost-exporter](https://github.com/st8ed/aws-cost-exporter)
 - [alanwds/aws-cost-exporter](https://github.com/alanwds/aws-cost-exporter)
-
-## TODO
-
-- [ ] Finish this readme
-- [ ] Publish the Helm chart to ArtifactsHub
