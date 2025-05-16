@@ -80,7 +80,8 @@ func main() {
 
 	// Convert metrics from the input to the output format
 	for _, cv := range app.Converters {
-		go cv.Convert(&cache)
+		// Cache key prefix is hardcoded, because only AWS is supported for now
+		go cv.Convert(&cache, "aws_")
 	}
 
 	// Collect the internal metrics

@@ -1,6 +1,6 @@
 module github.com/grem11n/cost-exporter
 
-go 1.23.8
+go 1.24
 
 require (
 	github.com/VictoriaMetrics/metrics v1.35.2

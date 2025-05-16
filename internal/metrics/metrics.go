@@ -2,15 +2,52 @@
 This package contains a VictoriaMetrics Set
 to write metrics produced by the cost-exporter itself
 */
-package intmetrics
+package metrics
 
 import (
 	"bytes"
+	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/VictoriaMetrics/metrics"
 )
+
+var (
+	defaultTags = map[string]string{
+		"job": "cost-exporter",
+	}
+)
+
+type Metric struct {
+	Value float64
+	Name  string
+	Tags  map[string]string
+}
+
+func AddMetrics(cache *sync.Map, namespace string, metrics []Metric) {
+	for _, m := range metrics {
+		AddMetric(cache, namespace, m)
+	}
+}
+
+func AddMetric(cache *sync.Map, namespace string, metric Metric) {
+	metric.addDefaultTags()
+	tags := []string{}
+	for k := range metric.Tags {
+		tags = append(tags, k)
+	}
+	tagsStr := strings.Join(tags, "_")
+	key := fmt.Sprintf("%s_%s_%s", namespace, metric.Name, tagsStr)
+	cache.Swap(key, metric)
+}
+
+func (m *Metric) addDefaultTags() {
+	for k, v := range defaultTags {
+		m.Tags[k] = v
+	}
+}
 
 const cooldown = 10 // seconds
 

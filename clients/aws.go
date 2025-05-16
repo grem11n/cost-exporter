@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -162,10 +163,12 @@ func (a *AWS) getCostAndUsageMetrics(cache *sync.Map) {
 		readyTs = time.Now().Add(1 * time.Hour).Unix()
 	}
 	a.enqueuWithTs(in, readyTs, 0)
+	logger.Debug("Converting metrics into the internal format")
+	metrics := convert(results)
 	key := fmt.Sprintf("%s_%d", keyPrefix, in.index)
 	logger.Debugf("Adding AWS metrics to the cache. Key: %s", key)
-	cache.Swap(key, results)
-	logger.Debug("Metrics: ", results)
+	intmetrics.AddMetrics(cache, "aws", metrics)
+	logger.Debug("Metrics: ", metrics)
 	getMetricsDuration.UpdateDuration(startTs)
 }
 
@@ -270,4 +273,28 @@ func (a *AWS) enqueuWithTs(in input, ts int64, retries int) {
 	if err := a.inputs.Enqueue(in); err != nil {
 		logger.Error(err)
 	}
+}
+
+// Converts AWS metrics into the internal format
+func convert(awsOut []costexplorer.GetCostAndUsageOutput) []intmetrics.Metric {
+	metrics := []intmetrics.Metric{}
+	for _, a := range awsOut {
+		for _, g := range a.ResultsByTime[0].Groups {
+			for mName := range g.Metrics {
+				dimension := g.Keys[0]
+				value, err := strconv.ParseFloat(*g.Metrics[mName].Amount, 64)
+				if err != nil {
+					logger.Error("cannot parse metric value: ", err)
+					break
+				}
+				metric := intmetrics.Metric{
+					Name:  mName,
+					Tags:  map[string]string{"dimension": dimension},
+					Value: value,
+				}
+				metrics = append(metrics, metric)
+			}
+		}
+	}
+	return metrics
 }

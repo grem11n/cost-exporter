@@ -3,7 +3,7 @@ package converters
 import "sync"
 
 type Conveter interface {
-	Convert(*sync.Map)
+	Convert(*sync.Map, string)
 }
 
 type ConveterFactory func() Conveter
