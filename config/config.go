@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/grem11n/cost-exporter/clients"
+	"github.com/grem11n/cost-exporter/logger"
 	"github.com/grem11n/cost-exporter/outputs"
 	"github.com/grem11n/cost-exporter/probes"
 	"github.com/spf13/viper"
@@ -13,6 +14,10 @@ import (
 
 const (
 	defaultConfigPath = "./config.yaml"
+)
+
+var (
+	ErrClientConfig = errors.New("client configuration is required")
 )
 
 type Config struct {
@@ -36,7 +41,7 @@ func New(configPath string) (*Config, error) {
 	}
 	var config Config
 	if err := viper.Unmarshal(&config); err != nil {
-		return nil, fmt.Errorf("Unable to read the config file %s: %w", configPath, err)
+		return nil, fmt.Errorf("unable to read the config file %s: %w", configPath, err)
 	}
 
 	if err := config.populateDefaults(); err != nil {
@@ -48,7 +53,8 @@ func New(configPath string) (*Config, error) {
 
 func (c *Config) populateDefaults() error {
 	if c.Clients == nil {
-		return errors.New("client configuration is required. Only AWS is supported")
+		logger.Error("client configuration is required. Only AWS is supported")
+		return ErrClientConfig
 	}
 
 	if c.Outputs == nil {

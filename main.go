@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/grem11n/cost-exporter/clients"
@@ -15,10 +14,11 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
+// App is a struct that holds parts for the application together
 type App struct {
 	MetricsFormat string
 	Clients       map[string]clients.Client
-	Converters    map[string]converters.Conveter
+	Converter     converters.Conveter
 	Outputs       map[string]outputs.Output
 }
 
@@ -33,7 +33,6 @@ var (
 	app   = App{
 		MetricsFormat: "prometheus", // only Prometheus is supported for now
 		Clients:       make(map[string]clients.Client),
-		Converters:    make(map[string]converters.Conveter),
 		Outputs:       make(map[string]outputs.Output),
 	}
 )
@@ -66,22 +65,16 @@ func main() {
 		go cl.GetMetrics(&cache)
 	}
 
-	// Convert raw metrics into a format suitable for output
-	// Only Prometheus is supported for now
-	convertedKeys := getConvertedKeys()
-	for _, converterName := range convertedKeys {
-		constructor := converters.GetConverter(converterName)
-		if constructor == nil {
-			logger.Fatalf("Converter %s doesn't exist", converterName)
-		}
-		converter := constructor()
-		app.Converters[converterName] = converter
+	constructor := converters.GetConverter(app.MetricsFormat)
+	if constructor == nil {
+		logger.Fatalf("Converter %s doesn't exist", app.MetricsFormat)
 	}
+	converter := constructor()
+	app.Converter = converter
 
 	// Convert metrics from the input to the output format
-	for _, cv := range app.Converters {
-		go cv.Convert(&cache)
-	}
+	// Cache key prefix is hardcoded, because only AWS is supported for now
+	go app.Converter.Convert(&cache, "aws_")
 
 	// Collect the internal metrics
 	go intmetrics.Publish(internalMetricsKey, &cache)
@@ -98,23 +91,8 @@ func main() {
 		app.Outputs[outputName] = output
 	}
 
-	// Append the internal metrics
-	convertedKeys = append(convertedKeys, internalMetricsKey)
-	// Output the metrics
+	// Output the metrics + append the internal metrics
 	for _, out := range app.Outputs {
-		out.Publish(convertedKeys, &cache)
+		out.Publish(&cache, []string{app.MetricsFormat, internalMetricsKey})
 	}
-}
-
-// Get a slice of cache keys that store converted metrics ready for outputs
-func getConvertedKeys() []string {
-	var convertedKeys = []string{}
-	for clientName := range app.Clients {
-		convertedKeys = append(
-			convertedKeys, fmt.Sprintf(
-				"%s-%s", app.MetricsFormat, clientName,
-			),
-		)
-	}
-	return convertedKeys
 }

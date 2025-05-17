@@ -2,8 +2,10 @@ package clients
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -25,6 +27,7 @@ import (
 const (
 	maxRetryCount          = 3 // maximum number of allowed retries to get AWS metrics before giving up
 	keyPrefix              = "aws"
+	metricsPrefix          = "aws_ce"
 	awsCallsSuccessName    = "cost_exporter_aws_calls_total{job=\"cost-exporter\",result=\"success\"}"
 	awsCallsFailureName    = "cost_exporter_aws_calls_total{job=\"cost-exporter\",result=\"failure\"}"
 	getMetricsDurationName = "cost_exporter_aws_get_metrics_duration{job=\"cost-exporter\"}"
@@ -34,6 +37,7 @@ var (
 	awsCallsSuccess    *metrics.Counter
 	awsCallsFailure    *metrics.Counter
 	getMetricsDuration *metrics.Histogram
+	ErrGranularity     = errors.New("unsupported granularity")
 )
 
 type AWS struct {
@@ -122,7 +126,8 @@ func (a *AWS) getCostAndUsageMetrics(cache *sync.Map) {
 	startTs := time.Now()
 	var results []costexplorer.GetCostAndUsageOutput
 	obj, err := a.inputs.DequeueOrWaitForNextElement()
-	in := obj.(input) // this type cast should be safe, since we control inputs
+	// this type cast should be safe, since we control inputs
+	in := obj.(input) //nolint:forcetypeassert
 	if err != nil {
 		logger.Error(err)
 		return
@@ -162,10 +167,12 @@ func (a *AWS) getCostAndUsageMetrics(cache *sync.Map) {
 		readyTs = time.Now().Add(1 * time.Hour).Unix()
 	}
 	a.enqueuWithTs(in, readyTs, 0)
+	logger.Debug("Converting metrics into the internal format")
+	metrics := convert(results)
 	key := fmt.Sprintf("%s_%d", keyPrefix, in.index)
 	logger.Debugf("Adding AWS metrics to the cache. Key: %s", key)
-	cache.Swap(key, results)
-	logger.Debug("Metrics: ", results)
+	intmetrics.AddMetrics(cache, "aws", metrics)
+	logger.Debug("Metrics: ", metrics)
 	getMetricsDuration.UpdateDuration(startTs)
 }
 
@@ -236,7 +243,8 @@ func buildCostAndUsageInput(metric *MetricsConfig, pageToken *string) (*costexpl
 		endDate = nowUtc.Format(time.RFC3339)
 		startDate = nowUtc.Add(-interval).Format(time.RFC3339)
 	default:
-		return nil, fmt.Errorf("unsupported granularity: %s. Supported: monthly, daily, hourly", metric.Granularity)
+		logger.Errorf("unsupported granularity: %s. Supported: monthly, daily, hourly", metric.Granularity)
+		return nil, ErrGranularity
 	}
 
 	if reflect.ValueOf(metric.Filter).IsZero() {
@@ -270,4 +278,29 @@ func (a *AWS) enqueuWithTs(in input, ts int64, retries int) {
 	if err := a.inputs.Enqueue(in); err != nil {
 		logger.Error(err)
 	}
+}
+
+// Converts AWS metrics into the internal format
+func convert(awsOut []costexplorer.GetCostAndUsageOutput) []intmetrics.Metric {
+	metrics := []intmetrics.Metric{}
+	for _, a := range awsOut {
+		for _, g := range a.ResultsByTime[0].Groups {
+			for mName := range g.Metrics {
+				dimension := g.Keys[0]
+				value, err := strconv.ParseFloat(*g.Metrics[mName].Amount, 64)
+				if err != nil {
+					logger.Error("cannot parse metric value: ", err)
+					break
+				}
+				metric := intmetrics.Metric{
+					Name:   mName,
+					Prefix: metricsPrefix,
+					Tags:   map[string]string{"dimension": dimension},
+					Value:  value,
+				}
+				metrics = append(metrics, metric)
+			}
+		}
+	}
+	return metrics
 }
