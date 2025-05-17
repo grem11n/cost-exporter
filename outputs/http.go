@@ -1,3 +1,7 @@
+// Package outputs implements metrics' outputs
+// such as HTTP
+// This file implements the HTTP output:
+// It exposes metrics on a configured :port/path
 package outputs
 
 import (
@@ -11,6 +15,7 @@ import (
 	"github.com/grem11n/cost-exporter/logger"
 )
 
+// HTTP config for the HTTP output
 type HTTP struct {
 	Path string
 	Port int
@@ -26,7 +31,10 @@ func init() {
 	Register("http", func(OutputConfig) Output { return &HTTP{} })
 }
 
-func (h *HTTP) Publish(keys []string, cache *sync.Map) {
+// Publish metrics on an HTTP endpoint.
+// cache is a pointer to the exchange point cache
+// keys - keys within the cache to get metrics from
+func (h *HTTP) Publish(cache *sync.Map, keys []string) {
 	path := h.Path
 	if path == "" {
 		logger.Infof("Using the default metrics path: ", defaultPath)

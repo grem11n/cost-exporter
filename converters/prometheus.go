@@ -16,12 +16,11 @@ import (
 type Prometheus struct{}
 
 const (
-	namespace           = "prometheus-aws"
-	defaultMetricPrefix = "aws_ce"
+	namespace = "prometheus"
 	// We do not need to convert metrics too frequently,
 	// since they are propagated hourly
 	cooldown               = 30 // minutes
-	costMetricsCounterName = "cost_exporter_cost_metrics_total{job=\"cost-exporter\",converter=\"prometheus-aws\"}"
+	costMetricsCounterName = "cost_exporter_cost_metrics_total{job=\"cost-exporter\",converter=\"prometheus\"}"
 	conversionDurationName = "cost_exporter_prometheus_aws_conversion_duration{job=\"cost-exporter\"}"
 )
 
@@ -52,7 +51,13 @@ func (p *Prometheus) convert(cache *sync.Map, fetchPrefix string) bool {
 	startTs := time.Now()
 	vm := metrics.NewSet()
 	cache.Range(func(key, value any) bool {
-		if strings.HasPrefix(key.(string), fetchPrefix) {
+		ks, ok := key.(string)
+		if !ok {
+			logger.Error("cache key is not a string, got %T", key)
+			// Return on this iteration, but continue the loop
+			return true
+		}
+		if strings.HasPrefix(ks, fetchPrefix) {
 			metric, ok := value.(intmetrics.Metric)
 			if !ok {
 				logger.Warn("wrong metric type found in %s: %T", fetchPrefix, value)
@@ -85,7 +90,12 @@ func (p *Prometheus) createVMetric(vm *metrics.Set, metric intmetrics.Metric) {
 		tags = append(tags, fmt.Sprintf("%s=\"%s\"", k, v))
 	}
 	tagStr := strings.Join(tags, ",")
-	metricName := fmt.Sprintf("%s_%s{%s}", defaultMetricPrefix, strcase.ToSnake(metric.Name), tagStr)
+	metricName := fmt.Sprintf(
+		"%s_%s{%s}",
+		strcase.ToSnake(metric.Prefix),
+		strcase.ToSnake(metric.Name),
+		tagStr,
+	)
 	vm.GetOrCreateGauge(metricName, func() float64 {
 		return metric.Value
 	})

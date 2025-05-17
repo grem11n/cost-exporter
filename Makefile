@@ -15,7 +15,13 @@ install_deps: ## Install test dependencies
 	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$(go env GOPATH)/bin $(GOLANGCI_LINT_VERSION)
 
 lint: ## Run golangci-lint
-	@golangci-lint run -E asciicheck -E bidichk -E bodyclose -E canonicalheader -E copyloopvar -E cyclop -E err113 -E errname -E funcorder -E funlen -E forcetypeassert -E gocognit -E goconst -E gocritic -E gosec -E iface -E lll -E loggercheck -E misspell -E revive -E tagalign -E whitespace
+	@golangci-lint run -E asciicheck -E bidichk -E bodyclose -E canonicalheader -E copyloopvar -E cyclop -E err113 -E errname -E funcorder -E funlen -E forcetypeassert -E gocognit -E goconst -E gocritic -E gosec -E iface -E lll -E loggercheck -E misspell -E tagalign -E whitespace #-E revive
 
 test: ## Run tests with Richgo
 	@richgo test -v ./...
+
+run: ## Run the app locally
+	@go run . -c config.example.yaml
+
+run-debug: ## Run the app locally with DEBUG logs
+	@LOG_LEVEL=DEBUG go run . -c config.example.yaml

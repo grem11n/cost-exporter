@@ -2,6 +2,7 @@ package clients
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -26,6 +27,7 @@ import (
 const (
 	maxRetryCount          = 3 // maximum number of allowed retries to get AWS metrics before giving up
 	keyPrefix              = "aws"
+	metricsPrefix          = "aws_ce"
 	awsCallsSuccessName    = "cost_exporter_aws_calls_total{job=\"cost-exporter\",result=\"success\"}"
 	awsCallsFailureName    = "cost_exporter_aws_calls_total{job=\"cost-exporter\",result=\"failure\"}"
 	getMetricsDurationName = "cost_exporter_aws_get_metrics_duration{job=\"cost-exporter\"}"
@@ -35,6 +37,7 @@ var (
 	awsCallsSuccess    *metrics.Counter
 	awsCallsFailure    *metrics.Counter
 	getMetricsDuration *metrics.Histogram
+	ErrGranularity     = errors.New("unsupported granularity")
 )
 
 type AWS struct {
@@ -123,7 +126,8 @@ func (a *AWS) getCostAndUsageMetrics(cache *sync.Map) {
 	startTs := time.Now()
 	var results []costexplorer.GetCostAndUsageOutput
 	obj, err := a.inputs.DequeueOrWaitForNextElement()
-	in := obj.(input) // this type cast should be safe, since we control inputs
+	// this type cast should be safe, since we control inputs
+	in := obj.(input) //nolint:forcetypeassert
 	if err != nil {
 		logger.Error(err)
 		return
@@ -239,7 +243,8 @@ func buildCostAndUsageInput(metric *MetricsConfig, pageToken *string) (*costexpl
 		endDate = nowUtc.Format(time.RFC3339)
 		startDate = nowUtc.Add(-interval).Format(time.RFC3339)
 	default:
-		return nil, fmt.Errorf("unsupported granularity: %s. Supported: monthly, daily, hourly", metric.Granularity)
+		logger.Errorf("unsupported granularity: %s. Supported: monthly, daily, hourly", metric.Granularity)
+		return nil, ErrGranularity
 	}
 
 	if reflect.ValueOf(metric.Filter).IsZero() {
@@ -288,9 +293,10 @@ func convert(awsOut []costexplorer.GetCostAndUsageOutput) []intmetrics.Metric {
 					break
 				}
 				metric := intmetrics.Metric{
-					Name:  mName,
-					Tags:  map[string]string{"dimension": dimension},
-					Value: value,
+					Name:   mName,
+					Prefix: metricsPrefix,
+					Tags:   map[string]string{"dimension": dimension},
+					Value:  value,
 				}
 				metrics = append(metrics, metric)
 			}

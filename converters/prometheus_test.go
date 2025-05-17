@@ -1,28 +1,43 @@
 package converters
 
-var (
-	testPrometheus     = Prometheus{}
-	expectedMetricsMap = map[string]map[string]float64{
-		"NetAmortizedCost": {
-			"AWS Cost Explorer":             0.19,
-			"Amazon DynamoDB":               0,
-			"Amazon Simple Storage Service": 5,
-			"AmazonCloudWatch":              0.31,
-		},
-		"NetUnblendedCost": {
-			"AWS Cost Explorer":             0.19,
-			"Amazon DynamoDB":               0,
-			"Amazon Simple Storage Service": 5,
-			"AmazonCloudWatch":              0.35,
-		},
-	}
-	expectedPrometheusMetrics = `aws_ce_net_amortized_cost{job="cost-exporter",dimension="AWS Cost Explorer"} 0.19
-aws_ce_net_amortized_cost{job="cost-exporter",dimension="Amazon DynamoDB"} 0
-aws_ce_net_amortized_cost{job="cost-exporter",dimension="Amazon Simple Storage Service"} 5
-aws_ce_net_amortized_cost{job="cost-exporter",dimension="AmazonCloudWatch"} 0.31
-aws_ce_net_unblended_cost{job="cost-exporter",dimension="AWS Cost Explorer"} 0.19
-aws_ce_net_unblended_cost{job="cost-exporter",dimension="Amazon DynamoDB"} 0
-aws_ce_net_unblended_cost{job="cost-exporter",dimension="Amazon Simple Storage Service"} 5
-aws_ce_net_unblended_cost{job="cost-exporter",dimension="AmazonCloudWatch"} 0.35
-`
+import (
+	"sync"
+	"testing"
+
+	"github.com/VictoriaMetrics/metrics"
+	intmetrics "github.com/grem11n/cost-exporter/internal/metrics"
+	"github.com/stretchr/testify/assert"
 )
+
+var (
+	testProm   = Prometheus{}
+	testMetric = intmetrics.Metric{
+		Name:   "test",
+		Prefix: "aws_ce",
+		Tags:   map[string]string{"foo": "bar"},
+		Value:  0.27,
+	}
+	testCache = sync.Map{}
+)
+
+func TestCreateVMetric(t *testing.T) {
+	vm := metrics.NewSet()
+	testProm.createVMetric(vm, testMetric)
+	assert.Equal(t, 1, len(vm.ListMetricNames()))
+}
+
+func TestConvert(t *testing.T) {
+	testCache.Clear()
+	ns := "test"
+	testCache.Store(ns, testMetric)
+
+	ok := testProm.convert(&testCache, ns)
+	assert.True(t, ok)
+
+	got, ok := testCache.Load(namespace)
+	assert.True(t, ok)
+
+	gotB, ok := got.([]byte)
+	assert.True(t, ok)
+	assert.Equal(t, "aws_ce_test{foo=\"bar\"} 0.27\n", string(gotB))
+}

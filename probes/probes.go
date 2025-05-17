@@ -1,3 +1,5 @@
+// Package probes implements Liveness, Readiness,
+// and Startup probes for Kubernetes.
 package probes
 
 import (
@@ -16,6 +18,7 @@ const (
 	defaultStartupProbeEndpoint   = "/start"
 )
 
+// Probes for K8s
 type Probes struct {
 	Port                   int
 	LivenessProbeEndpoint  string `mapstructure:"liveness,omitempty"`
@@ -24,6 +27,7 @@ type Probes struct {
 	Cache                  *sync.Map
 }
 
+// ProbeConfig stores configuration for K8s probes
 type ProbeConfig struct {
 	Port                   int
 	LivenessProbeEndpoint  string `mapstructure:"liveness,omitempty"`
@@ -31,6 +35,7 @@ type ProbeConfig struct {
 	StartupProbeEndpoint   string `mapstructure:"startup,omitempty"`
 }
 
+// New returns a pointer to a Probes instance
 func New(conf *ProbeConfig, cache *sync.Map) *Probes {
 	// Check if probes' endpoints are not empty
 	livenessProbeEndpoint := conf.LivenessProbeEndpoint
@@ -63,6 +68,7 @@ func New(conf *ProbeConfig, cache *sync.Map) *Probes {
 	}
 }
 
+// Run the K8s probes server
 func (p *Probes) Run() {
 	http.HandleFunc(p.LivenessProbeEndpoint, p.livenessProbe)
 	http.HandleFunc(p.ReadinessProbeEndpoint, p.readinessProbe)

@@ -21,9 +21,10 @@ var (
 )
 
 type Metric struct {
-	Value float64
-	Name  string
-	Tags  map[string]string
+	Value  float64
+	Name   string
+	Prefix string // is used to distinguish cloud clients
+	Tags   map[string]string
 }
 
 func AddMetrics(cache *sync.Map, namespace string, metrics []Metric) {
