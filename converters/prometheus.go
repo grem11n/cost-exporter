@@ -31,7 +31,8 @@ var (
 
 func init() {
 	logger.Info("Initializing PrometheusAWS converter")
-	Register(namespace, func() Conveter { return &Prometheus{} })
+	// Prometheus doesn't require any config
+	Register(namespace, func(ConverterConfig) Converter { return &Prometheus{} })
 	// Maybe initiate all the metrics in a loop if there are too many
 	logger.Info("Initializing PrometheusAWS converter metrics")
 	costMetricsCounter = intmetrics.InternalMetricsSet.GetOrCreateCounter(costMetricsCounterName)
@@ -39,7 +40,7 @@ func init() {
 }
 
 func (p *Prometheus) Convert(cache *sync.Map, fetchPrefix string) {
-	logger.Info("Converting AWS metrics to the Prometheus format")
+	logger.Info("Converting cost metrics to the Prometheus format")
 	for {
 		if ok := p.convert(cache, fetchPrefix); ok {
 			time.Sleep(cooldown * time.Minute)

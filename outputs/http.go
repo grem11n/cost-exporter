@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/grem11n/cost-exporter/logger"
+	"github.com/mitchellh/mapstructure"
 )
 
-// HTTP config for the HTTP output
 type HTTP struct {
 	Path string
 	Port int
@@ -28,7 +28,16 @@ const (
 
 func init() {
 	logger.Info("Initializing HTTP output")
-	Register("http", func(OutputConfig) Output { return &HTTP{} })
+	Register("http", func(conf OutputConfig) Output {
+		var h HTTP
+		if err := mapstructure.Decode(conf, &h); err != nil {
+			logger.Fatalf("unable to decode HTTP config: %w", err)
+		}
+		return &HTTP{
+			Path: h.Path,
+			Port: h.Port,
+		}
+	})
 }
 
 // Publish metrics on an HTTP endpoint.

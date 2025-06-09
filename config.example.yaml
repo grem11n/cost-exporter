@@ -57,7 +57,8 @@ clients:
 # Specify the metrics format to output
 # Currently, only prometheus format is supported
 # So, this setting is ignored
-metrics_format: "prometheus"
+metrics_format:
+  prometheus: {}
 
 # Set outputs for the metrics
 # Currently, only the HTTP output is supported
