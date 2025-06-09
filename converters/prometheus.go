@@ -13,10 +13,11 @@ import (
 	"github.com/grem11n/cost-exporter/logger"
 )
 
-type Prometheus struct{}
+type Prometheus struct {
+	Namespace string
+}
 
 const (
-	namespace = "prometheus"
 	// We do not need to convert metrics too frequently,
 	// since they are propagated hourly
 	cooldown               = 30 // minutes
@@ -30,9 +31,14 @@ var (
 )
 
 func init() {
-	logger.Info("Initializing PrometheusAWS converter")
+	logger.Info("Initializing Prometheus converter")
+	name := "prometheus"
 	// Prometheus doesn't require any config
-	Register(namespace, func(ConverterConfig) Converter { return &Prometheus{} })
+	Register(name, func(ConverterConfig) Converter {
+		return &Prometheus{
+			Namespace: name,
+		}
+	})
 	// Maybe initiate all the metrics in a loop if there are too many
 	logger.Info("Initializing PrometheusAWS converter metrics")
 	costMetricsCounter = intmetrics.InternalMetricsSet.GetOrCreateCounter(costMetricsCounterName)
@@ -75,8 +81,8 @@ func (p *Prometheus) convert(cache *sync.Map, fetchPrefix string) bool {
 
 	var res bytes.Buffer
 	vm.WritePrometheus(&res)
-	logger.Debug("Writing Prometheus metrics to cache with key: ", namespace)
-	cache.Swap(namespace, res.Bytes())
+	logger.Debug("Writing Prometheus metrics to cache with key: ", p.Namespace)
+	cache.Swap(p.Namespace, res.Bytes())
 	logger.Debug("Prometheus metrics: ", res.String())
 
 	costMetricsCounter.Set(uint64(len(vm.ListMetricNames())))
