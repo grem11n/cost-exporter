@@ -16,10 +16,9 @@ import (
 
 // App is a struct that holds parts for the application together
 type App struct {
-	MetricsFormat string
-	Clients       map[string]clients.Client
-	Converter     converters.Conveter
-	Outputs       map[string]outputs.Output
+	Clients   map[string]clients.Client
+	Converter converters.Converter
+	Outputs   map[string]outputs.Output
 }
 
 const (
@@ -31,9 +30,8 @@ var (
 	// Create new global cache as an exchange point
 	cache sync.Map
 	app   = App{
-		MetricsFormat: "prometheus", // only Prometheus is supported for now
-		Clients:       make(map[string]clients.Client),
-		Outputs:       make(map[string]outputs.Output),
+		Clients: make(map[string]clients.Client),
+		Outputs: make(map[string]outputs.Output),
 	}
 )
 
@@ -65,11 +63,23 @@ func main() {
 		go cl.GetMetrics(&cache)
 	}
 
-	constructor := converters.GetConverter(app.MetricsFormat)
-	if constructor == nil {
-		logger.Fatalf("Converter %s doesn't exist", app.MetricsFormat)
+	if len(conf.MetricsFormat) != 1 {
+		logger.Fatalf("only a single metrics format is supported")
 	}
-	converter := constructor()
+
+	var converterName string
+	var converterConfig converters.ConverterConfig
+	for k, v := range conf.MetricsFormat {
+		converterName, converterConfig = k, v
+		break
+
+	}
+
+	constructor := converters.GetConverter(converterName)
+	if constructor == nil {
+		logger.Fatalf("Converter %s doesn't exist", conf.MetricsFormat)
+	}
+	converter := constructor(converterConfig)
 	app.Converter = converter
 
 	// Convert metrics from the input to the output format
@@ -93,6 +103,6 @@ func main() {
 
 	// Output the metrics + append the internal metrics
 	for _, out := range app.Outputs {
-		out.Publish(&cache, []string{app.MetricsFormat, internalMetricsKey})
+		out.Publish(&cache, []string{converterName, internalMetricsKey})
 	}
 }

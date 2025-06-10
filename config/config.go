@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/grem11n/cost-exporter/clients"
+	"github.com/grem11n/cost-exporter/converters"
 	"github.com/grem11n/cost-exporter/logger"
 	"github.com/grem11n/cost-exporter/outputs"
 	"github.com/grem11n/cost-exporter/probes"
@@ -21,10 +22,10 @@ var (
 )
 
 type Config struct {
-	Clients       map[string]clients.ClientConfig `mapstructure:"clients"`
-	MetricsFormat string                          `mapstructure:"metrics_format,omitempty"`
-	Outputs       map[string]outputs.OutputConfig `mapstructure:"outputs"`
-	Probes        probes.ProbeConfig              `mapstructure:"kubernetes_probes,omitempty"`
+	Clients       map[string]clients.ClientConfig       `mapstructure:"clients"`
+	MetricsFormat map[string]converters.ConverterConfig `mapstructure:"metrics_format,omitempty"`
+	Outputs       map[string]outputs.OutputConfig       `mapstructure:"outputs"`
+	Probes        probes.ProbeConfig                    `mapstructure:"kubernetes_probes,omitempty"`
 }
 
 func New(configPath string) (*Config, error) {
@@ -57,7 +58,14 @@ func (c *Config) populateDefaults() error {
 		return ErrClientConfig
 	}
 
+	if c.MetricsFormat == nil {
+		logger.Warn("no metric format configuration specified. Default is Prometheus")
+		c.MetricsFormat = make(map[string]converters.ConverterConfig)
+		c.MetricsFormat["prometheus"] = converters.Prometheus{}
+	}
+
 	if c.Outputs == nil {
+		logger.Warn("no outputs configuration specified. Default is HTTP")
 		c.Outputs = make(map[string]outputs.OutputConfig)
 		c.Outputs["http"] = outputs.HTTP{}
 	}

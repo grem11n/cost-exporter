@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	testProm   = Prometheus{}
+	testProm   = Prometheus{Namespace: "prometheus"}
 	testMetric = intmetrics.Metric{
 		Name:   "test",
 		Prefix: "aws_ce",
@@ -34,7 +34,7 @@ func TestConvert(t *testing.T) {
 	ok := testProm.convert(&testCache, ns)
 	assert.True(t, ok)
 
-	got, ok := testCache.Load(namespace)
+	got, ok := testCache.Load("prometheus")
 	assert.True(t, ok)
 
 	gotB, ok := got.([]byte)
