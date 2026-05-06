@@ -10,8 +10,8 @@ type ConverterFactory func() Converter
 
 var converterRegistry = make(map[string]ConverterFactory)
 
-func Register(name string, conveter ConverterFactory) {
-	converterRegistry[name] = conveter
+func Register(name string, converter ConverterFactory) {
+	converterRegistry[name] = converter
 }
 
 func GetConverter(name string) ConverterFactory {
