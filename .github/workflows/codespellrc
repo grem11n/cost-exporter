@@ -1,2 +1,2 @@
 [codespell]
-skip = .goreleaser.yaml
+ignore-words-list = fo
