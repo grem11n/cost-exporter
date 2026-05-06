@@ -2,19 +2,19 @@ package converters
 
 import "sync"
 
-type Conveter interface {
+type Converter interface {
 	Convert(*sync.Map, string)
 }
 
-type ConveterFactory func() Conveter
+type ConverterFactory func() Converter
 
-var converterRegistry = make(map[string]ConveterFactory)
+var converterRegistry = make(map[string]ConverterFactory)
 
-func Register(name string, conveter ConveterFactory) {
+func Register(name string, conveter ConverterFactory) {
 	converterRegistry[name] = conveter
 }
 
-func GetConverter(name string) ConveterFactory {
+func GetConverter(name string) ConverterFactory {
 	if converter, ok := converterRegistry[name]; ok {
 		return converter
 	}

@@ -18,7 +18,7 @@ import (
 type App struct {
 	MetricsFormat string
 	Clients       map[string]clients.Client
-	Converter     converters.Conveter
+	Converter     converters.Converter
 	Outputs       map[string]outputs.Output
 }
 

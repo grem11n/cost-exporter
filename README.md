@@ -64,7 +64,7 @@ in the Prometheus format on an HTTP endpoint, because this is kind of the indust
 ## Usage
 
 There is a ready-to-go Helm chart available in the [`charts/cost-exporter`](./charts/cost-exporter/) directory.
-However, Cost Exporter is a Go applicaton which also has a Docker image avaialble.
+However, Cost Exporter is a Go application which also has a Docker image available.
 So, you can run it in any environment you want.
 
 ### Kubernetes
@@ -198,7 +198,7 @@ Also, there are some ideas for improvements in the "[Further Thoughts](#further-
 - Preferably, keep the version and the Helm chart version itself also in sync
 <!-- textlint-disable -->
 - In case of any changes to the Helm chart, make sure to re-generate its README file
-- Udpate this README file with the new version icon before releasing
+- Update this README file with the new version icon before releasing
 <!-- textlint-enable -->
 - Create a new tag and let GHA and GoReleaser do their job
 
