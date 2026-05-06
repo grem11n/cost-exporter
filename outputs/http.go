@@ -94,7 +94,7 @@ func (h *HTTP) handleMetrics(keys []string, cache *sync.Map) http.HandlerFunc {
 				}
 				return
 			}
-			res.WriteString(fmt.Sprintf("# Metrics from %s\r\n", key))
+			fmt.Fprintf(&res, "# Metrics from %s\r\n", key)
 			res.Write(rb)
 		}
 
