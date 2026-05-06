@@ -1,5 +1,0 @@
-misconfigurations:
-  - id: AVD-DS-0026
-    paths:
-      - "Dockerfile"
-    statement: Healthcheck port is variable
