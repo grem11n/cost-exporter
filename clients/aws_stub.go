@@ -7,6 +7,12 @@ import (
 	"github.com/aws/smithy-go/middleware"
 )
 
+const (
+	AWS_CE_NAME = "AWS Cost Explorer"
+	UNBL_COST   = "NetUnblendedCost"
+	AMORT_COST  = "NetAmortizedCost"
+)
+
 var CeStub []*costexplorer.GetCostAndUsageOutput = []*costexplorer.GetCostAndUsageOutput{
 	{
 		DimensionValueAttributes: []types.DimensionValuesWithAttributes{},
@@ -22,13 +28,13 @@ var CeStub []*costexplorer.GetCostAndUsageOutput = []*costexplorer.GetCostAndUsa
 				Estimated: true,
 				Groups: []types.Group{
 					{
-						Keys: []string{"AWS Cost Explorer"},
+						Keys: []string{AWS_CE_NAME},
 						Metrics: map[string]types.MetricValue{
-							"NetAmortizedCost": {
+							AMORT_COST: {
 								Amount: aws.String("0.19"),
 								Unit:   aws.String("USD"),
 							},
-							"NetUnblendedCost": {
+							UNBL_COST: {
 								Amount: aws.String("0.19"),
 								Unit:   aws.String("USD"),
 							},
@@ -58,13 +64,13 @@ var CeStub []*costexplorer.GetCostAndUsageOutput = []*costexplorer.GetCostAndUsa
 				Estimated: true,
 				Groups: []types.Group{
 					{
-						Keys: []string{"AWS Cost Explorer"},
+						Keys: []string{AWS_CE_NAME},
 						Metrics: map[string]types.MetricValue{
-							"NetAmortizedCost": {
+							AMORT_COST: {
 								Amount: aws.String("0.19"),
 								Unit:   aws.String("USD"),
 							},
-							"NetUnblendedCost": {
+							UNBL_COST: {
 								Amount: aws.String("0.19"),
 								Unit:   aws.String("USD"),
 							},
@@ -73,11 +79,11 @@ var CeStub []*costexplorer.GetCostAndUsageOutput = []*costexplorer.GetCostAndUsa
 					{
 						Keys: []string{"Amazon DynamoDB"},
 						Metrics: map[string]types.MetricValue{
-							"NetAmortizedCost": {
+							AMORT_COST: {
 								Amount: aws.String("0"),
 								Unit:   aws.String("USD"),
 							},
-							"NetUnblendedCost": {
+							UNBL_COST: {
 								Amount: aws.String("0"),
 								Unit:   aws.String("USD"),
 							},
@@ -86,11 +92,11 @@ var CeStub []*costexplorer.GetCostAndUsageOutput = []*costexplorer.GetCostAndUsa
 					{
 						Keys: []string{"Amazon Simple Storage Service"},
 						Metrics: map[string]types.MetricValue{
-							"NetAmortizedCost": {
+							AMORT_COST: {
 								Amount: aws.String("5"),
 								Unit:   aws.String("USD"),
 							},
-							"NetUnblendedCost": {
+							UNBL_COST: {
 								Amount: aws.String("5"),
 								Unit:   aws.String("USD"),
 							},
@@ -99,11 +105,11 @@ var CeStub []*costexplorer.GetCostAndUsageOutput = []*costexplorer.GetCostAndUsa
 					{
 						Keys: []string{"AmazonCloudWatch"},
 						Metrics: map[string]types.MetricValue{
-							"NetAmortizedCost": {
+							AMORT_COST: {
 								Amount: aws.String("0.31"),
 								Unit:   aws.String("USD"),
 							},
-							"NetUnblendedCost": {
+							UNBL_COST: {
 								Amount: aws.String("0.35"),
 								Unit:   aws.String("USD"),
 							},

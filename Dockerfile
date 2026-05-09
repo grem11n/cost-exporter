@@ -1,5 +1,5 @@
 FROM alpine:3 as certs
-RUN apk --update add ca-certificates
+RUN apk --update --no-cache add ca-certificates
 
 #checkov:skip=CKV_DOCKER_2: healthchecks are set in K8s
 FROM scratch

@@ -61,7 +61,7 @@ deployment:
   nodeSelector: {}
 
   # -- Probes are started on a different port from the outputs
-  #   for the implementation simpicity
+  #   for the implementation simplicity
   startupProbe: {}
   livenessProbe:
     httpGet:

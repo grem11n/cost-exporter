@@ -31,7 +31,7 @@ var (
 
 func init() {
 	logger.Info("Initializing PrometheusAWS converter")
-	Register(namespace, func() Conveter { return &Prometheus{} })
+	Register(namespace, func() Converter { return &Prometheus{} })
 	// Maybe initiate all the metrics in a loop if there are too many
 	logger.Info("Initializing PrometheusAWS converter metrics")
 	costMetricsCounter = intmetrics.InternalMetricsSet.GetOrCreateCounter(costMetricsCounterName)
